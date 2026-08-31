@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 #PBS -N phasefield-petsc
-#PBS -l select=1:ncpus=16:mpiprocs=16
+#PBS -l select=1:ncpus=2:mpiprocs=2
 #PBS -l walltime=04:00:00
 #PBS -l mem=32gb
 #PBS -j oe
+
+# The two-rank request is a safe template default. Override the resource at
+# submission, for example: qsub -l select=1:ncpus=4:mpiprocs=4 this-file.pbs
 
 set -euo pipefail
 
@@ -22,20 +25,19 @@ SCRIPT_DIR="${SCRIPT_DIR:-${PROJECT_ROOT}/linux_cluster}"
 if [[ -n "${PBS_NP:-}" ]]; then
   export NPROCS="${PBS_NP}"
 elif [[ -r "${PBS_NODEFILE:-}" ]]; then
-  export NPROCS="$(wc -l < "${PBS_NODEFILE}")"
+  export NPROCS="$(wc -l < "${PBS_NODEFILE}" | tr -d '[:space:]')"
 else
   echo "PBS_NP/PBS_NODEFILE is unavailable; cannot determine MPI size." >&2
   exit 2
 fi
 if [[ -r "${PBS_NODEFILE:-}" ]]; then
-  export EXPECTED_NODES="$(sort -u "${PBS_NODEFILE}" | wc -l)"
-else
-  export EXPECTED_NODES="${EXPECTED_NODES:-0}"
+  export EXPECTED_NODES="$(sort -u "${PBS_NODEFILE}" | wc -l | tr -d '[:space:]')"
 fi
 
-export MPI_LAUNCHER="${MPI_LAUNCHER:-mpiexec}"
+export MPI_PREFERENCE="${MPI_PREFERENCE:-${MPI_LAUNCHER:-auto}}"
 export INPUT_FILE="${INPUT_FILE:-${SCRIPT_DIR}/inputs/notched_tension_cluster.in}"
 export OUTPUT_DIR="${OUTPUT_DIR:-${PROJECT_ROOT}/results/pbs_${PBS_JOBID}_${NPROCS}r}"
 
-# Add site-specific module commands only if required by your cluster.
+# Add site-specific module commands only if required by your cluster. The
+# launcher compatibility-tests a discovered site MPI before using it.
 bash "${SCRIPT_DIR}/run_linux.sh"

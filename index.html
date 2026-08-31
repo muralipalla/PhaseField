@@ -781,13 +781,14 @@ conda activate phasefield-fenicsx-linux</span></pre>
           </li>
           <li>
             <div>
-              <h3>Verify all 16 ranks and collective I/O</h3>
-              <p>Change ranks and nodes together when the intended allocation differs.</p>
+              <h3>Detect cores and verify the selected MPI</h3>
+              <p>Choose <code>--ranks 2</code>, <code>4</code>, <code>16</code>, <code>auto</code>, or any positive integer. Automatic mode respects affinity-visible physical cores and scheduler slots.</p>
               <div class="code-block">
-                <div class="code-label"><span>Bash · 16 ranks on one host</span><button class="copy-button" type="button">Copy</button></div>
-                <pre><span>mpiexec -n 16 python -u linux_cluster/check_environment.py \
-  --expected-ranks 16 --expected-nodes 1 \
-  --check-xdmf results/preflight_16r</span></pre>
+                <div class="code-label"><span>Bash · inspect, then preflight four ranks</span><button class="copy-button" type="button">Copy</button></div>
+                <pre><span>bash linux_cluster/run_linux.sh --ranks auto --mpi auto --show-options
+
+PREFLIGHT_ONLY=1 EXPECTED_NODES=1 \
+  bash linux_cluster/run_linux.sh --ranks 4</span></pre>
               </div>
               <p>The preflight exercises MPI/PETSc communicator agreement, KSP, SNESVI, placement, ghost exchange, and parallel XDMF/HDF5.</p>
             </div>
@@ -796,11 +797,11 @@ conda activate phasefield-fenicsx-linux</span></pre>
             <div>
               <h3>Run the small parallel smoke case</h3>
               <div class="code-block">
-                <div class="code-label"><span>Bash · 16 ranks</span><button class="copy-button" type="button">Copy</button></div>
-                <pre><span>NPROCS=16 \
+                <div class="code-label"><span>Bash · user-selected ranks</span><button class="copy-button" type="button">Copy</button></div>
+                <pre><span>RANKS=4
 INPUT_FILE=linux_cluster/inputs/cluster_smoke.in \
-OUTPUT_DIR=results/smoke_16r \
-bash linux_cluster/run_linux.sh</span></pre>
+OUTPUT_DIR="results/smoke_${RANKS}r" \
+bash linux_cluster/run_linux.sh --ranks "$RANKS"</span></pre>
               </div>
             </div>
           </li>
@@ -818,14 +819,20 @@ SCALING_REPEATS=3 bash linux_cluster/run_xeon16_suite.sh scaling</span></pre>
         </ol>
 
         <div class="callout danger">
-          <h3>Keep the entire MPI stack ABI-compatible</h3>
+          <h3>MPI discovery is path-independent and compatibility-tested</h3>
           <p>
-            The supplied environment solves MPICH, mpi4py, real-scalar PETSc/petsc4py,
-            DOLFINx, and MPI-enabled HDF5 together. Do not install a separate pip
-            <code>petsc4py</code> or use an unrelated system <code>mpiexec</code>. For
-            tuned multi-node fabrics, ask the administrators for their consistent
-            FEniCSx/PETSc module, container, or Spack workflow.
+            The launcher does not assume <code>/usr/bin</code>. Automatic mode checks
+            <code>MPI_HOME</code>, then the MPI visible before Conda activation, and
+            finally Conda MPI. It probes a non-Conda candidate with the selected Python,
+            mpi4py, PETSc, and DOLFINx; a failed candidate is bypassed automatically in
+            favor of Conda MPI. Use <code>RUNTIME_ENV=active</code> only for a complete
+            site stack built against the site MPI.
           </p>
+          <div class="code-block">
+            <div class="code-label"><span>Bash · local MPICH 4.2.3 example</span><button class="copy-button" type="button">Copy</button></div>
+            <pre><span>MPI_HOME=/home/palla/Software/mpich-local-install \
+  bash linux_cluster/run_linux.sh --ranks auto --mpi auto --show-options</span></pre>
+          </div>
         </div>
 
         <div class="source-links" aria-label="Linux source files">
@@ -857,7 +864,7 @@ SCALING_REPEATS=3 bash linux_cluster/run_xeon16_suite.sh scaling</span></pre>
           </article>
           <article class="panel">
             <h3>MPI rank or communicator mismatch</h3>
-            <p>Inspect <code>which python</code> and <code>which mpiexec</code>. Both must resolve to one compatible MPI stack and match the requested allocation.</p>
+            <p>Run <code>MPI_PROBE_VERBOSE=1 bash linux_cluster/run_linux.sh --ranks auto --mpi auto --show-options</code>. It reports the current and Conda candidates, capacity, tested selection, and any automatic fallback.</p>
           </article>
           <article class="panel">
             <h3>XDMF/HDF5 write failure</h3>
@@ -869,7 +876,7 @@ SCALING_REPEATS=3 bash linux_cluster/run_xeon16_suite.sh scaling</span></pre>
           </article>
           <article class="panel">
             <h3>Need a site-specific launcher</h3>
-            <p>Start from the supplied Slurm/PBS templates, then set the local account, queue, nodes, tasks, wall time, and filesystem paths.</p>
+            <p>Start from the supplied Slurm/PBS templates, then set the local account, queue, nodes, tasks, wall time, filesystem paths, and <code>MPI_PREFERENCE</code> if the site requires <code>srun</code> or an exact launcher.</p>
           </article>
         </div>
 
@@ -911,7 +918,7 @@ SCALING_REPEATS=3 bash linux_cluster/run_xeon16_suite.sh scaling</span></pre>
           </article>
           <article class="panel">
             <h3>Linux/HPC operations</h3>
-            <p>PETSc options, schedulers, 16/32-rank launch patterns, and scaling guidance.</p>
+            <p>PETSc options, schedulers, automatic, 2-, 4-, 16-, and custom-rank launch patterns, and scaling guidance.</p>
             <p><a href="linux_cluster/README.md">Open the cluster guide →</a></p>
           </article>
         </div>

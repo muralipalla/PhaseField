@@ -187,8 +187,9 @@ produce a plateau.
 # Stop after the first failed simulation instead of collecting all failures
 FAIL_FAST=1 bash linux_cluster/run_xeon16_suite.sh all
 
-# Use a different compatible launcher
-MPI_LAUNCHER=mpirun bash linux_cluster/run_xeon16_suite.sh smoke
+# Prefer and compatibility-test the local MPICH installation
+MPI_HOME=/home/palla/Software/mpich-local-install \
+  MPI_PREFERENCE=auto bash linux_cluster/run_xeon16_suite.sh smoke
 
 # Conda MPICH/Hydra core binding; verify the accepted option with mpiexec -help
 MPI_EXTRA_ARGS="-bind-to core" bash linux_cluster/run_xeon16_suite.sh scaling

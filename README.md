@@ -17,8 +17,9 @@ execution, and results, while the dedicated
 For institute clusters, the separate
 [Linux PETSc/MPI package](linux_cluster/README.md) provides a distributed
 DOLFINx backend, conda environment, preflight, inputs, and Slurm/PBS launchers
-intended for validated 16- or 32-rank allocations. The Windows/SciPy backend
-remains serial; both backends use the same governing forms and material parser.
+for 2, 4, 16, `auto`, or any positive user-selected rank count, subject to the
+detected physical-core and scheduler capacity. The Windows/SciPy backend remains
+serial; both backends use the same governing forms and material parser.
 
 ## Get the code
 
@@ -60,6 +61,27 @@ run `conda init powershell`, reopen PowerShell, or source your Miniconda
 For Linux PETSc/MPI installation, use
 [`linux_cluster/environment-linux.yml`](linux_cluster/environment-linux.yml)
 and follow the [Windows and Linux installation guide](docs/installation.html).
+
+The Linux launcher discovers physical cores and MPI executables without assuming
+`/usr/bin`. To inspect its automatic choices with a local MPICH prefix:
+
+```bash
+MPI_HOME=/home/palla/Software/mpich-local-install \
+  bash linux_cluster/run_linux.sh --ranks auto --mpi auto --show-options
+```
+
+To test the exact local MPICH 4.2.3 executable with four ranks:
+
+```bash
+PREFLIGHT_ONLY=1 EXPECTED_NODES=1 \
+  bash linux_cluster/run_linux.sh --ranks 4 \
+  --mpi /home/palla/Software/mpich-local-install/bin/mpiexec
+```
+
+A compatible current MPI is retained. If its launcher cannot start the active
+mpi4py/PETSc/DOLFINx stack correctly, the default Conda workflow bypasses it and
+uses Conda MPI automatically. See the cluster guide for `RUNTIME_ENV=active`
+when the institute provides the complete Python/MPI/PETSc stack.
 
 ## Run
 

@@ -10,6 +10,12 @@ python phasefield_crack.py --input-file inputs/notched_tension.in
 
 Invoking the command runs the simulation; there is no separate `run` keyword.
 
+MPI ranks and launcher selection are execution controls, not physical-model
+input keywords. They are intentionally absent from this input file because MPI
+must start before Python parses it. On Linux, use `--ranks`, `--mpi`, `MPI_HOME`,
+and `RUNTIME_ENV` as documented in the
+[cluster guide](../linux_cluster/README.md).
+
 ## Syntax
 
 Each nonempty line contains exactly one keyword and one value:

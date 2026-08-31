@@ -1169,7 +1169,7 @@
             For institute clusters, use the separate
             <a href="../linux_cluster/README.md">Linux PETSc/MPI backend</a>. It uses
             distributed DOLFINx meshes, PETSc SNES/SNESVI, collective XDMF/HDF5, and
-            supplied launch templates for genuine 16- or 32-rank jobs.
+            supplied launch templates for allocation-aware, user-selected rank counts.
           </p>
         </div>
       </section>
@@ -1720,7 +1720,9 @@ override stiff_inclusion young_modulus 420.0</span></pre>
             <a href="../phasefield_crack.py">phasefield_crack.py</a>. Linux uses
             <code>phasefield-fenicsx-linux</code> with the separate
             <a href="../linux_cluster/phasefield_crack_petsc.py">PETSc/MPI solver</a>.
-            Do not mix MPI or PETSc packages between these environments.
+            A non-Conda launcher may be used after the Linux compatibility probe
+            validates it. A complete site-built MPI/PETSc/Python stack must instead
+            be activated together with <code>RUNTIME_ENV=active</code>.
           </p>
         </div>
       </section>
@@ -1964,7 +1966,7 @@ python phasefield_crack.py -in inputs\graded_file.in</span></pre>
           <li><strong>History-field approximation.</strong> The maximum-history formulation is an engineering approximation to the exact global irreversibility variational inequality, although each implemented phase subproblem enforces nodal bounds and KKT optimality.</li>
           <li><strong>Diffuse starter notch.</strong> An internal φ = 0 line represents the flaw; the mesh contains no traction-free geometric slit.</li>
           <li><strong>Two-dimensional split.</strong> The principal-strain model is explicitly 2D. Plane stress changes λ; it does not create a three-dimensional state.</li>
-          <li><strong>Two solver backends.</strong> This page's native-Windows SciPy backend is serial. The separate <a href="../linux_cluster/README.md">Linux PETSc/MPI backend</a> supports partitioned 16/32-rank cluster runs, subject to allocation-specific MPI and parallel-I/O validation.</li>
+          <li><strong>Two solver backends.</strong> This page's native-Windows SciPy backend is serial. The separate <a href="../linux_cluster/README.md">Linux PETSc/MPI backend</a> supports allocation-aware, user-selected multi-rank runs, subject to allocation-specific MPI and parallel-I/O validation.</li>
           <li><strong>Resolution gate.</strong> h/ℓ ≤ 0.5 is a minimum discretization rule, not a mesh-convergence proof. Peak load, energy, and crack path still need refinement studies.</li>
           <li><strong>Quasi-static load control.</strong> Cutback improves robustness but is not arc-length continuation. Severe snap-back can require energy control or an arc-length method.</li>
           <li><strong>Crack-front threshold.</strong> φ ≤ 0.2 and mesh connectivity define a diagnostic only; they do not enter the evolution law.</li>
@@ -1987,7 +1989,7 @@ python phasefield_crack.py -in inputs\graded_file.in</span></pre>
           <li><a href="../tests/test_phasefield_crack.py">tests/test_phasefield_crack.py</a> — model and end-to-end tests</li>
           <li><a href="../tests/test_phasefield_input.py">tests/test_phasefield_input.py</a> — input syntax and precedence tests</li>
           <li><a href="../environment.yml">environment.yml</a> — Conda environment</li>
-          <li><a href="../linux_cluster/README.md">linux_cluster/README.md</a> — PETSc/MPI environment, preflight, and 16/32-rank scheduler guide</li>
+          <li><a href="../linux_cluster/README.md">linux_cluster/README.md</a> — PETSc/MPI environment, preflight, and variable-rank scheduler guide</li>
           <li><a href="../README.md">README.md</a> — compact project entry point</li>
           <li><a href="PHASEFIELD_ALGORITHM_ACCEPTANCE_AND_CORRECTIONS.tex">Formal algorithm assessment · LaTeX</a> — editable standalone assessment source</li>
           <li><a href="../output/pdf/PHASEFIELD_ALGORITHM_ACCEPTANCE_AND_CORRECTIONS.pdf">Formal algorithm assessment · PDF</a> — compiled standalone assessment document</li>

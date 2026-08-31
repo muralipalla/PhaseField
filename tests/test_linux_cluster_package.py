@@ -121,17 +121,31 @@ def test_preflight_and_job_files_have_expected_rank_controls() -> None:
     slurm = (LINUX / "slurm_phasefield.sbatch").read_text(encoding="utf-8")
     pbs = (LINUX / "pbs_phasefield.pbs").read_text(encoding="utf-8")
     launcher = (LINUX / "run_linux.sh").read_text(encoding="utf-8")
-    assert "#SBATCH --ntasks=16" in slurm
+    probe = (LINUX / "mpi_compatibility_probe.py").read_text(encoding="utf-8")
+    ast.parse(probe)
+    assert "#SBATCH --ntasks=2" in slurm
     assert 'NPROCS="${SLURM_NTASKS}"' in slurm
-    assert "mpiprocs=16" in pbs
+    assert 'MPI_PREFERENCE="${MPI_PREFERENCE:-${MPI_LAUNCHER:-auto}}"' in slurm
+    assert "mpiprocs=2" in pbs
+    assert 'MPI_PREFERENCE="${MPI_PREFERENCE:-${MPI_LAUNCHER:-auto}}"' in pbs
     assert "PBS_NODEFILE" in pbs
-    assert 'NPROCS="${NPROCS:-16}"' in launcher
+    assert "--ranks" in launcher
+    assert "--mpi" in launcher
+    assert "MPI_HOME" in launcher
+    assert "PHYSICAL_CORE_CAPACITY" in launcher
+    assert "FORCE_INCOMPATIBLE_MPI" in launcher
+    assert "automatic Conda fallback" in launcher
+    assert 'RUNTIME_ENV="${RUNTIME_ENV:-conda}"' in launcher
+    assert 'ALLOW_EXTERNAL_MPI="${ALLOW_EXTERNAL_MPI:-0}"' in launcher
+    assert "RUNTIME_ENV=active" in launcher
     assert "--expected-ranks" in launcher
     assert "--expected-nodes" in launcher
     assert "--check-xdmf" in launcher
     assert 'PREFLIGHT_ONLY="${PREFLIGHT_ONLY:-0}"' in launcher
     assert "--report-json" in preflight
     assert 'if [[ -n "${EXPECTED_NODES:-}" ]]' in launcher
+    assert "--expected-ranks" in probe
+    assert "comm.size != args.expected_ranks" in probe
 
 
 def test_non_linux_preflight_can_tolerate_missing_cpu_affinity(monkeypatch) -> None:
@@ -158,12 +172,17 @@ def test_cluster_bundle_has_no_windows_specific_paths() -> None:
             assert "MinicondaINSTALL" not in text
 
 
-def test_cluster_readme_documents_16_32_and_mpi_abi_risk() -> None:
+def test_cluster_readme_documents_variable_ranks_and_mpi_selection() -> None:
     text = (LINUX / "README.md").read_text(encoding="utf-8")
     for phrase in (
-        "NPROCS=16",
-        "NPROCS=32",
-        "sbatch --ntasks=32",
+        "--ranks 2",
+        "--ranks 4",
+        "--ranks 16",
+        "--ranks auto",
+        "MPI_HOME=/home/palla/Software/mpich-local-install",
+        "/home/palla/Software/mpich-local-install/bin/mpiexec",
+        "automatic Conda fallback",
+        "RUNTIME_ENV=active",
         "PETSC_OPTIONS",
         "ABI-compatible",
         "SNESVI",
