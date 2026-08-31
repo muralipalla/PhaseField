@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Install and verify the native-Windows SciPy or Linux PETSc/MPI backend of the AT2 phase-field fracture solver.">
-  <title>Install · AT2 phase-field fracture</title>
+  <meta name="description" content="Install, verify, and run the native-Windows SciPy or Linux PETSc/MPI backend of the Phase Field Fracture Model (PFFM).">
+  <title>Install, Verify, Run · Phase Field Fracture Model (PFFM)</title>
   <style>
     :root {
       color-scheme: light;
@@ -113,12 +113,12 @@
     }
 
     .hero h1 {
-      max-width: 14ch;
+      max-width: 20ch;
       margin: 0;
       color: #fff;
-      font-size: clamp(2.8rem, 7vw, 5.8rem);
-      line-height: .98;
-      letter-spacing: -.055em;
+      font-size: clamp(2.65rem, 6vw, 5.25rem);
+      line-height: 1;
+      letter-spacing: -.045em;
     }
 
     .hero-deck {
@@ -458,15 +458,33 @@
     }
 
     .footer-inner {
-      display: flex;
-      justify-content: space-between;
-      gap: 2rem;
+      display: grid;
+      gap: .65rem;
       width: min(1180px,100%);
       margin: 0 auto;
       font-size: .8rem;
     }
 
     .footer-inner p { margin: 0; }
+
+    .footer-inner a {
+      color: #e6f5f2;
+      text-decoration-color: rgba(230,245,242,.5);
+      text-underline-offset: .16em;
+    }
+
+    .footer-inner a:hover { text-decoration-color: currentColor; }
+
+    .footer-license {
+      color: #e4eeee;
+      font-size: .86rem;
+    }
+
+    .footer-attribution {
+      max-width: 1000px;
+      color: #a8bfc0;
+      line-height: 1.65;
+    }
 
     @media (max-width: 920px) {
       .layout { grid-template-columns: minmax(0,1fr); gap: 1.2rem; }
@@ -532,8 +550,8 @@
 
   <header class="hero">
     <div class="hero-inner">
-      <p class="eyebrow">AT2 phase-field fracture · FEniCSx</p>
-      <h1>Install. Verify. Run.</h1>
+      <p class="eyebrow">Phase Field Fracture Model (PFFM) · FEniCSx</p>
+      <h1>Install, Verify, Run to Phase Field Fracture Model (PFFM)</h1>
       <p class="hero-deck">
         Set up the native-Windows serial solver or the Linux PETSc/MPI solver from
         checked Conda specifications, validate the complete numerical stack, and start
@@ -878,8 +896,18 @@ SCALING_REPEATS=3 bash linux_cluster/run_xeon16_suite.sh scaling</span></pre>
 
   <footer>
     <div class="footer-inner">
-      <p>AT2 phase-field fracture · Windows SciPy and Linux PETSc/MPI</p>
-      <p>Offline document: no external fonts, scripts, or stylesheets.</p>
+      <p class="footer-license">
+        <strong>Phase Field Fracture Model (PFFM)</strong> · &copy; 2026 Murali Palla and contributors ·
+        Project source code released under the <a href="LICENSE">MIT License</a>.
+      </p>
+      <p class="footer-attribution">
+        Built with <a href="https://fenicsproject.org/">FEniCSx/DOLFINx</a>,
+        <a href="https://petsc.org/">PETSc/petsc4py</a>,
+        <a href="https://mpi4py.readthedocs.io/">MPI/mpi4py</a>,
+        <a href="https://numpy.org/">NumPy</a>, <a href="https://scipy.org/">SciPy</a>,
+        and <a href="https://matplotlib.org/">Matplotlib</a>.
+        Third-party components remain under their respective licenses.
+      </p>
     </div>
   </footer>
 
