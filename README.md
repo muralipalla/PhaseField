@@ -8,10 +8,11 @@ linearly graded, or region/file-defined material coefficients. The formal
 algorithm acceptance and corrections review is available as
 [LaTeX source](docs/PHASEFIELD_ALGORITHM_ACCEPTANCE_AND_CORRECTIONS.tex) and a
 [compiled PDF](output/pdf/PHASEFIELD_ALGORITHM_ACCEPTANCE_AND_CORRECTIONS.pdf). The
-[HTML guide](docs/index.html) covers the governing equations, input system,
-execution, and results. The dedicated
-[installation guide](docs/installation.html) provides checked Windows and Linux
-setup, verification, and first-run commands.
+[installation home page](index.html) provides the checked Windows and Linux
+setup, verification, and first-run commands. The full
+[HTML model guide](docs/index.html) covers the governing equations, input system,
+execution, and results, while the dedicated
+[installation reference](docs/installation.html) adds updates and troubleshooting.
 
 For institute clusters, the separate
 [Linux PETSc/MPI package](linux_cluster/README.md) provides a distributed

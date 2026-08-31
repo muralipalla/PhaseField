@@ -33,7 +33,11 @@ def _inventory(path: Path) -> _HTMLInventory:
 
 
 def test_html_documentation_has_unique_ids_and_resolvable_local_links() -> None:
-    pages = (DOCS / "index.html", DOCS / "installation.html")
+    pages = (
+        ROOT / "index.html",
+        DOCS / "index.html",
+        DOCS / "installation.html",
+    )
     inventories = {page.resolve(): _inventory(page) for page in pages}
     for page, inventory in inventories.items():
         assert len(inventory.ids) == len(set(inventory.ids)), page
@@ -41,6 +45,9 @@ def test_html_documentation_has_unique_ids_and_resolvable_local_links() -> None:
             parsed = urlsplit(href)
             if parsed.scheme or parsed.netloc:
                 continue
+            assert not parsed.path.startswith("/"), (
+                f"{page}: root-absolute link is not project-site safe: {href!r}"
+            )
             target = (
                 page.parent / unquote(parsed.path)
                 if parsed.path
@@ -77,9 +84,32 @@ def test_installation_page_covers_both_checked_backends() -> None:
     assert "D:\\Software" not in source
 
 
+def test_root_index_is_the_cross_platform_installation_home() -> None:
+    source = (ROOT / "index.html").read_text(encoding="utf-8")
+    required = (
+        'id="windows"',
+        'id="linux"',
+        "environment.yml",
+        "scripts/verify_fenicsx_install.py",
+        "phasefield_crack.py --quick",
+        "linux_cluster/environment-linux.yml",
+        "linux_cluster/check_environment.py",
+        "linux_cluster/run_linux.sh",
+        "linux_cluster/run_xeon16_suite.sh",
+        "docs/installation.html",
+        "docs/index.html",
+        "FENICSX_INSTALL_OK",
+    )
+    for token in required:
+        assert token in source
+    assert "D:\\Github" not in source
+    assert "D:\\Software" not in source
+
+
 def test_entry_documentation_links_to_installation_guide() -> None:
     index = (DOCS / "index.html").read_text(encoding="utf-8")
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "[installation home page](index.html)" in readme
     assert "installation.html" in index
     assert "docs/installation.html" in readme
     assert "tmp\\verify_fenicsx_install.py" not in index
