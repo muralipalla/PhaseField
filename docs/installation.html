@@ -691,6 +691,21 @@
         <ol class="step-list">
           <li>
             <div>
+              <h3>Get the source code</h3>
+              <p>
+                Clone the repository with Git, or
+                <a href="https://github.com/muralipalla/PhaseField/archive/refs/heads/main.zip">download the ZIP archive</a>,
+                extract it, and open PowerShell in the extracted project directory.
+              </p>
+              <div class="code-block">
+                <div class="code-label"><span>Clone from GitHub</span><button class="copy-button" type="button">Copy</button></div>
+                <pre><span>git clone https://github.com/muralipalla/PhaseField.git
+cd PhaseField</span></pre>
+              </div>
+            </div>
+          </li>
+          <li>
+            <div>
               <h3>Initialize Conda for PowerShell</h3>
               <p>Use the Miniconda Prompt once, then close and reopen PowerShell.</p>
               <div class="code-block">
@@ -703,7 +718,8 @@
           <li>
             <div>
               <h3>Create the checked environment</h3>
-              <p>Open PowerShell in the project root, where <code>environment.yml</code> is visible.</p>
+              <p>Open PowerShell in the project root.</p>
+              <p class="environment-file">Environment file: <a href="../environment.yml" download><code>environment.yml</code></a></p>
               <div class="code-block">
                 <div class="code-label"><span>Create once</span><button class="copy-button" type="button">Copy</button></div>
                 <pre><span>conda env create --file environment.yml
@@ -760,6 +776,21 @@ conda activate phasefield-fenicsx</span></pre>
         <ol class="step-list">
           <li>
             <div>
+              <h3>Get the source code</h3>
+              <p>
+                Clone the repository with Git, or
+                <a href="https://github.com/muralipalla/PhaseField/archive/refs/heads/main.zip">download the ZIP archive</a>,
+                extract it, and open a Bash shell in the extracted project directory.
+              </p>
+              <div class="code-block">
+                <div class="code-label"><span>Clone from GitHub</span><button class="copy-button" type="button">Copy</button></div>
+                <pre><span>git clone https://github.com/muralipalla/PhaseField.git
+cd PhaseField</span></pre>
+              </div>
+            </div>
+          </li>
+          <li>
+            <div>
               <h3>Initialize Conda for Bash</h3>
               <p>Run once if <code>conda activate</code> is not available, then start a new shell.</p>
               <div class="code-block">
@@ -773,6 +804,7 @@ exec bash</span></pre>
             <div>
               <h3>Create the ABI-compatible stack</h3>
               <p>From the project root, create and activate the MPICH-based environment.</p>
+              <p class="environment-file">Environment file: <a href="../linux_cluster/environment-linux.yml" download><code>linux_cluster/environment-linux.yml</code></a></p>
               <div class="code-block">
                 <div class="code-label"><span>Create once</span><button class="copy-button" type="button">Copy</button></div>
                 <pre><span>conda env create --file linux_cluster/environment-linux.yml

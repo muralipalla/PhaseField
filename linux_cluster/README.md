@@ -39,7 +39,14 @@ uses collective XDMF/HDF5 output, and restricts JSON/CSV/PNG writes to rank 0.
 
 Copy the **whole project**, not only this directory, because the PETSc backend
 shares the audited constitutive definitions and strict input parser at the
-project root. For example, from your workstation:
+project root. Obtain it on your workstation with Git:
+
+```bash
+git clone https://github.com/muralipalla/PhaseField.git
+```
+
+If Git is unavailable, [download the main-branch ZIP archive](https://github.com/muralipalla/PhaseField/archive/refs/heads/main.zip)
+and extract it. Then transfer the complete project to the cluster, for example:
 
 ```bash
 rsync -av PhaseField/ username@login.cluster.edu:/path/to/PhaseField/
@@ -49,6 +56,11 @@ On the cluster login node:
 
 ```bash
 cd /path/to/PhaseField
+```
+
+Environment file: [`linux_cluster/environment-linux.yml`](environment-linux.yml)
+
+```bash
 conda env create --file linux_cluster/environment-linux.yml
 conda activate phasefield-fenicsx-linux
 ```

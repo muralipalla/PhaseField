@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from html.parser import HTMLParser
 from pathlib import Path
+import re
 from urllib.parse import unquote, urlsplit
 
 
@@ -30,6 +31,20 @@ def _inventory(path: Path) -> _HTMLInventory:
     parser = _HTMLInventory()
     parser.feed(path.read_text(encoding="utf-8"))
     return parser
+
+
+def _assert_environment_link_immediately_precedes_create(
+    source: str, *, href: str, label: str, command: str
+) -> None:
+    pattern = re.compile(
+        rf'<p class="environment-file">Environment file: '
+        rf'<a href="{re.escape(href)}" download><code>{re.escape(label)}</code></a></p>\s*'
+        rf'<div class="code-block">.*?<pre><span>{re.escape(command)}',
+        re.DOTALL,
+    )
+    assert pattern.search(source), (
+        f"{label} must be linked immediately before {command!r}"
+    )
 
 
 def test_html_documentation_has_unique_ids_and_resolvable_local_links() -> None:
@@ -77,11 +92,25 @@ def test_installation_page_covers_both_checked_backends() -> None:
         "FENICSX_INSTALL_OK",
         "PETSc",
         "MPI",
+        "git clone https://github.com/muralipalla/PhaseField.git",
+        "https://github.com/muralipalla/PhaseField/archive/refs/heads/main.zip",
     )
     for token in required:
         assert token in source
     assert "D:\\Github" not in source
     assert "D:\\Software" not in source
+    _assert_environment_link_immediately_precedes_create(
+        source,
+        href="../environment.yml",
+        label="environment.yml",
+        command="conda env create --file environment.yml",
+    )
+    _assert_environment_link_immediately_precedes_create(
+        source,
+        href="../linux_cluster/environment-linux.yml",
+        label="linux_cluster/environment-linux.yml",
+        command="conda env create --file linux_cluster/environment-linux.yml",
+    )
 
 
 def test_root_index_is_the_cross_platform_installation_home() -> None:
@@ -99,11 +128,52 @@ def test_root_index_is_the_cross_platform_installation_home() -> None:
         "docs/installation.html",
         "docs/index.html",
         "FENICSX_INSTALL_OK",
+        "git clone https://github.com/muralipalla/PhaseField.git",
+        "https://github.com/muralipalla/PhaseField/archive/refs/heads/main.zip",
     )
     for token in required:
         assert token in source
     assert "D:\\Github" not in source
     assert "D:\\Software" not in source
+    _assert_environment_link_immediately_precedes_create(
+        source,
+        href="environment.yml",
+        label="environment.yml",
+        command="conda env create --file environment.yml",
+    )
+    _assert_environment_link_immediately_precedes_create(
+        source,
+        href="linux_cluster/environment-linux.yml",
+        label="linux_cluster/environment-linux.yml",
+        command="conda env create --file linux_cluster/environment-linux.yml",
+    )
+
+
+def test_markdown_install_guides_link_environment_before_create_command() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    linux_readme = (ROOT / "linux_cluster" / "README.md").read_text(
+        encoding="utf-8"
+    )
+    xeon_plan = (ROOT / "linux_cluster" / "XEON16_TEST_PLAN.md").read_text(
+        encoding="utf-8"
+    )
+    assert (
+        "Environment file: [`environment.yml`](environment.yml)\n\n"
+        "```powershell\nconda env create --file environment.yml"
+    ) in readme
+    linux_marker = (
+        "Environment file: [`linux_cluster/environment-linux.yml`]"
+        "(environment-linux.yml)\n\n"
+        "```bash\nconda env create --file linux_cluster/environment-linux.yml"
+    )
+    assert linux_marker in linux_readme
+    assert linux_marker in xeon_plan
+    for source in (readme, linux_readme):
+        assert "git clone https://github.com/muralipalla/PhaseField.git" in source
+        assert (
+            "https://github.com/muralipalla/PhaseField/archive/refs/heads/main.zip"
+            in source
+        )
 
 
 def test_entry_documentation_links_to_installation_guide() -> None:

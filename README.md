@@ -20,11 +20,25 @@ DOLFINx backend, conda environment, preflight, inputs, and Slurm/PBS launchers
 intended for validated 16- or 32-rank allocations. The Windows/SciPy backend
 remains serial; both backends use the same governing forms and material parser.
 
+## Get the code
+
+Clone the repository and enter the project directory:
+
+```bash
+git clone https://github.com/muralipalla/PhaseField.git
+cd PhaseField
+```
+
+If Git is unavailable, [download the main-branch ZIP archive](https://github.com/muralipalla/PhaseField/archive/refs/heads/main.zip),
+extract it, and open a terminal in the extracted `PhaseField-main` directory.
+
 ## Windows environment
 
 The native-Windows backend uses Python 3.12, DOLFINx 0.11.0, and serial SciPy
 solves. Install Miniconda and Visual Studio 2022 Build Tools with the C++
 workload and a Windows SDK. In PowerShell from the project root:
+
+Environment file: [`environment.yml`](environment.yml)
 
 ```powershell
 conda env create --file environment.yml

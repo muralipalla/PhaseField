@@ -9,6 +9,8 @@ field output, and a fixed-work 1/2/4/8/16-rank strong-scaling sweep.
 
 Create or update the Linux environment from the project root:
 
+Environment file: [`linux_cluster/environment-linux.yml`](environment-linux.yml)
+
 ```bash
 conda env create --file linux_cluster/environment-linux.yml
 # If it already exists:
