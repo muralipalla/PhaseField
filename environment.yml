@@ -1,0 +1,14 @@
+name: phasefield-fenicsx
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - fenics-dolfinx=0.11.0
+  - scipy
+  - pyamg
+  - matplotlib-base
+  - pyvista
+  - meshio
+  - h5py
+  - pytest
+  - pip

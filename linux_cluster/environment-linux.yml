@@ -1,0 +1,17 @@
+name: phasefield-fenicsx-linux
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.12
+  - fenics-dolfinx=0.11.0
+  - mpi=1.0=mpich
+  - mpich
+  - mpi4py
+  - petsc=3.25.*=real_*
+  - petsc4py=3.25.*
+  - hdf5=*=mpi_mpich_*
+  - numpy
+  - scipy
+  - matplotlib-base
+  - pytest

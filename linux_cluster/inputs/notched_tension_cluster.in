@@ -1,0 +1,68 @@
+# PETSc/MPI production example for the corrected AT2 notched-tension model.
+# Every physical, nonlinear, output, and PETSc configuration field is listed.
+
+# Geometry and structured triangular mesh [mm]
+width 1.0
+height 1.0
+notch_length 0.20
+nx 200
+ny 200
+
+# Elastic and fracture data in the kN-mm unit system
+young_modulus 210.0
+poisson_ratio 0.30
+fracture_toughness 2.7e-3
+length_scale 0.030
+young_modulus_end 210.0
+poisson_ratio_end 0.30
+fracture_toughness_end 2.7e-3
+length_scale_end 0.030
+material_mode uniform
+material_file none
+residual_stiffness 1.0e-8
+plane_stress false
+
+# Displacement-controlled loading [mm]
+mechanical_bc_scheme legacy_roller_pin
+max_displacement 0.015
+max_sliding_displacement 0.0
+load_steps 60
+
+# Nonlinear, staggered, and irreversibility controls
+max_newton_iterations 25
+newton_relative_tolerance 1.0e-8
+newton_absolute_tolerance 1.0e-10
+newton_increment_tolerance 1.0e-10
+max_staggered_iterations 250
+staggered_tolerance 1.0e-5
+staggered_mechanical_tolerance 1.0e-6
+phase_kkt_tolerance 1.0e-8
+phase_optimizer_max_iterations 200
+spectral_smoothing 1.0e-10
+
+# Transactional load cutback and recovery
+max_load_cutbacks 8
+load_cutback_factor 0.5
+load_growth_patience 3
+load_growth_iteration_threshold 10
+
+# Output and safeguards; batch scripts normally override output_directory
+output_directory results/linux_petsc
+write_every 1
+write_xdmf true
+write_material_fields true
+make_plots true
+strict_mesh_resolution true
+verbose true
+
+# PETSc nonlinear and Krylov solver selections
+displacement_snes_type newtonls
+displacement_ksp_type gmres
+displacement_pc_type gamg
+phase_snes_type vinewtonrsls
+phase_ksp_type cg
+phase_pc_type gamg
+ksp_relative_tolerance 1.0e-10
+ksp_absolute_tolerance 1.0e-14
+ksp_max_iterations 1000
+petsc_monitor false

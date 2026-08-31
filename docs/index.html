@@ -1,0 +1,2085 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Governing equations, mixed-mode loading, spatial materials, numerical algorithm, input reference, and verified results for AT2 phase-field fracture in FEniCSx.">
+  <title>AT2 phase-field fracture · FEniCSx guide</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17262d;
+      --muted: #5a6c73;
+      --paper: #f6f4ed;
+      --surface: #fffdf8;
+      --surface-2: #edf3f1;
+      --line: #d5ddda;
+      --navy: #173c4a;
+      --navy-deep: #0d2933;
+      --teal: #087f75;
+      --teal-dark: #05615a;
+      --amber: #d88116;
+      --red: #a9433e;
+      --green: #2d7653;
+      --blue: #315f9e;
+      --shadow: 0 16px 42px rgba(23, 60, 74, 0.10);
+      --radius: 17px;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --mono: "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      --math: "Cambria Math", Cambria, "Times New Roman", serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: 1.25rem;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 7%, rgba(8,127,117,.12), transparent 25rem),
+        linear-gradient(180deg, #f2f1eb 0, var(--paper) 31rem);
+      font-family: var(--sans);
+      line-height: 1.62;
+      text-rendering: optimizeLegibility;
+    }
+
+    a {
+      color: var(--teal-dark);
+      text-decoration-thickness: .08em;
+      text-underline-offset: .16em;
+    }
+
+    a:hover { color: var(--navy); }
+
+    :focus-visible {
+      outline: 3px solid rgba(216,129,22,.9);
+      outline-offset: 3px;
+      border-radius: 4px;
+    }
+
+    .skip-link {
+      position: fixed;
+      z-index: 100;
+      top: .75rem;
+      left: .75rem;
+      transform: translateY(-180%);
+      padding: .7rem 1rem;
+      border-radius: .55rem;
+      color: #fff;
+      background: var(--navy-deep);
+    }
+
+    .skip-link:focus { transform: translateY(0); }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      min-height: 30rem;
+      color: #f7fbfa;
+      background:
+        linear-gradient(110deg, rgba(13,41,51,.99), rgba(23,60,74,.95) 62%, rgba(8,127,117,.87)),
+        repeating-linear-gradient(135deg, transparent 0 24px, rgba(255,255,255,.04) 25px 26px);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -7rem;
+      bottom: -15rem;
+      width: 34rem;
+      height: 34rem;
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 50%;
+      box-shadow: 0 0 0 4rem rgba(255,255,255,.03), 0 0 0 9rem rgba(255,255,255,.025);
+      pointer-events: none;
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      width: min(1180px, calc(100% - 2.5rem));
+      margin: 0 auto;
+      padding: 5rem 0 4.5rem;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: .55rem;
+      margin: 0 0 1rem;
+      color: #bde9e3;
+      font-size: .78rem;
+      font-weight: 780;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 1.8rem;
+      height: 2px;
+      background: #5bd0c5;
+    }
+
+    h1, h2, h3, h4 {
+      margin-top: 0;
+      color: var(--navy-deep);
+      line-height: 1.18;
+      letter-spacing: -.025em;
+    }
+
+    h1 {
+      max-width: 900px;
+      margin-bottom: 1.2rem;
+      color: #fff;
+      font-size: clamp(2.45rem, 6vw, 4.8rem);
+      line-height: 1.02;
+    }
+
+    h2 {
+      margin-bottom: 1.25rem;
+      font-size: clamp(1.75rem, 3.2vw, 2.55rem);
+    }
+
+    h3 {
+      margin: 1.9rem 0 .7rem;
+      font-size: 1.24rem;
+    }
+
+    h4 {
+      margin: 1.2rem 0 .42rem;
+      font-size: 1rem;
+    }
+
+    .hero-deck {
+      max-width: 800px;
+      margin: 0;
+      color: #d8e7e7;
+      font-size: clamp(1.05rem, 1.7vw, 1.28rem);
+    }
+
+    .hero-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .65rem;
+      margin-top: 2rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .45rem;
+      padding: .45rem .72rem;
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 999px;
+      color: #eaf6f4;
+      background: rgba(255,255,255,.08);
+      font-size: .82rem;
+      font-weight: 650;
+      backdrop-filter: blur(8px);
+    }
+
+    .badge-dot {
+      width: .48rem;
+      height: .48rem;
+      border-radius: 50%;
+      background: #55d3a7;
+      box-shadow: 0 0 0 3px rgba(85,211,167,.15);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 230px minmax(0,1fr);
+      gap: 3.2rem;
+      width: min(1180px, calc(100% - 2.5rem));
+      margin: 0 auto;
+      padding: 3.5rem 0 6rem;
+    }
+
+    .toc-wrap {
+      align-self: start;
+      position: sticky;
+      top: 1.5rem;
+    }
+
+    .toc-label {
+      margin: 0 0 .75rem;
+      color: var(--muted);
+      font-size: .71rem;
+      font-weight: 800;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .toc {
+      margin: 0;
+      padding: 0;
+      border-left: 1px solid var(--line);
+      list-style: none;
+    }
+
+    .toc a {
+      display: block;
+      margin-left: -1px;
+      padding: .43rem .75rem;
+      border-left: 3px solid transparent;
+      color: var(--muted);
+      font-size: .84rem;
+      text-decoration: none;
+      transition: color 150ms ease, border-color 150ms ease, background 150ms ease;
+    }
+
+    .toc a:hover,
+    .toc a[aria-current="true"] {
+      border-left-color: var(--teal);
+      color: var(--navy-deep);
+      background: linear-gradient(90deg, rgba(8,127,117,.09), transparent);
+    }
+
+    .toc-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+      margin-top: 1.1rem;
+    }
+
+    button { border: 0; font: inherit; cursor: pointer; }
+
+    .quiet-button {
+      display: inline-block;
+      padding: .46rem .68rem;
+      border: 1px solid var(--line);
+      border-radius: .5rem;
+      color: var(--navy);
+      background: rgba(255,255,255,.68);
+      font-size: .76rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    main { min-width: 0; }
+
+    section {
+      margin-bottom: 5.3rem;
+      scroll-margin-top: 1.5rem;
+    }
+
+    .section-kicker {
+      margin: 0 0 .44rem;
+      color: var(--teal);
+      font-size: .75rem;
+      font-weight: 800;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .section-intro {
+      max-width: 790px;
+      margin: -.45rem 0 1.8rem;
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    .lead-card, .panel, .callout, .equation {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255,253,248,.93);
+    }
+
+    .lead-card {
+      display: grid;
+      grid-template-columns: 1.45fr 1fr;
+      gap: 1.3rem;
+      padding: 1.6rem;
+      box-shadow: var(--shadow);
+    }
+
+    .lead-card p { margin: 0; }
+
+    .model-card {
+      padding: 1.1rem 1.2rem;
+      border-radius: .9rem;
+      color: #edf7f4;
+      background: var(--navy);
+    }
+
+    .model-card strong {
+      display: block;
+      margin-bottom: .35rem;
+      color: #81e0d1;
+      font-size: .74rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .grid-2, .grid-3, .metric-grid {
+      display: grid;
+      min-width: 0;
+      gap: 1rem;
+    }
+
+    .grid-2 { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    .grid-3 { grid-template-columns: repeat(3,minmax(0,1fr)); }
+    .metric-grid { grid-template-columns: repeat(4,minmax(0,1fr)); margin: 1.35rem 0; }
+
+    .panel {
+      min-width: 0;
+      padding: 1.25rem;
+      box-shadow: none;
+    }
+
+    .panel h3, .panel h4 { margin-top: 0; }
+    .panel p:last-child { margin-bottom: 0; }
+
+    .callout {
+      position: relative;
+      margin: 1.4rem 0;
+      padding: 1.2rem 1.35rem 1.2rem 1.5rem;
+      box-shadow: none;
+    }
+
+    .callout::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 5px;
+      border-radius: var(--radius) 0 0 var(--radius);
+      background: var(--teal);
+    }
+
+    .callout.warning::before { background: var(--amber); }
+    .callout.danger::before { background: var(--red); }
+    .callout h3, .callout h4 { margin-top: 0; }
+    .callout p:last-child { margin-bottom: 0; }
+
+    .equation {
+      overflow-x: auto;
+      margin: 1.1rem 0;
+      padding: 1.2rem 1.35rem;
+      box-shadow: none;
+    }
+
+    .equation-label {
+      display: block;
+      margin-bottom: .55rem;
+      color: var(--teal);
+      font-size: .69rem;
+      font-weight: 820;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .math {
+      min-width: max-content;
+      color: #112f3a;
+      font-family: var(--math);
+      font-size: clamp(1rem,2vw,1.2rem);
+      line-height: 1.9;
+    }
+
+    .math.small { font-size: 1rem; }
+
+    .where {
+      margin: .55rem 0 0;
+      color: var(--muted);
+      font-size: .86rem;
+    }
+
+    .definition-grid {
+      display: grid;
+      grid-template-columns: max-content minmax(0,1fr);
+      gap: .52rem 1rem;
+      margin: 1rem 0;
+    }
+
+    .definition-grid dt {
+      color: var(--navy);
+      font-family: var(--math);
+      font-weight: 700;
+    }
+
+    .definition-grid dd {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    code, pre { font-family: var(--mono); }
+
+    code {
+      padding: .1em .28em;
+      border-radius: .3em;
+      color: #194b57;
+      background: #e7efec;
+      font-size: .88em;
+    }
+
+    .code-block {
+      position: relative;
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
+      margin: 1rem 0 1.45rem;
+      border: 1px solid #254955;
+      border-radius: .85rem;
+      background: #102d37;
+      box-shadow: 0 12px 28px rgba(16,45,55,.15);
+    }
+
+    .code-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 2.4rem;
+      padding: .43rem .65rem .43rem .9rem;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+      color: #9dc4c8;
+      font-size: .71rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .copy-button {
+      padding: .35rem .56rem;
+      border-radius: .36rem;
+      color: #d9edec;
+      background: rgba(255,255,255,.09);
+      font-size: .7rem;
+      font-weight: 700;
+    }
+
+    .copy-button:hover { background: rgba(255,255,255,.16); }
+
+    pre {
+      max-width: 100%;
+      overflow-x: auto;
+      margin: 0;
+      padding: 1.05rem 1.1rem;
+      color: #e4efed;
+      font-size: .79rem;
+      line-height: 1.66;
+      tab-size: 2;
+    }
+
+    .table-scroll {
+      overflow-x: auto;
+      margin: 1.15rem 0;
+      border: 1px solid var(--line);
+      border-radius: .8rem;
+      background: var(--surface);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .85rem;
+    }
+
+    th, td {
+      padding: .76rem .82rem;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--navy-deep);
+      background: #ecf2f0;
+      font-size: .7rem;
+      font-weight: 800;
+      letter-spacing: .055em;
+      text-transform: uppercase;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+    tbody tr:hover td { background: rgba(8,127,117,.035); }
+
+    .keyword-table { min-width: 900px; }
+    .keyword-table td:first-child { font-family: var(--mono); color: var(--navy); }
+    .keyword-table td:nth-child(2), .keyword-table td:nth-child(3) { white-space: nowrap; }
+
+    .algorithm {
+      display: grid;
+      gap: .72rem;
+      margin: 1.25rem 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: algorithm;
+    }
+
+    .algorithm li {
+      counter-increment: algorithm;
+      display: grid;
+      grid-template-columns: 3rem minmax(0,1fr);
+      gap: 1rem;
+      align-items: start;
+      padding: 1.03rem 1.14rem;
+      border: 1px solid var(--line);
+      border-radius: .85rem;
+      background: var(--surface);
+    }
+
+    .algorithm li::before {
+      content: counter(algorithm,decimal-leading-zero);
+      display: grid;
+      width: 2.7rem;
+      height: 2.7rem;
+      place-items: center;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--navy);
+      font-family: var(--mono);
+      font-size: .78rem;
+      font-weight: 800;
+    }
+
+    .algorithm strong { display: block; color: var(--navy-deep); }
+    .algorithm p { margin: .18rem 0 0; color: var(--muted); font-size: .91rem; }
+
+    .branch {
+      margin-top: .65rem;
+      padding: .65rem .8rem;
+      border-left: 3px solid var(--amber);
+      color: #6d4a13;
+      background: #fff5e4;
+      font-size: .84rem;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5,minmax(0,1fr));
+      gap: .5rem;
+      margin: 1.2rem 0;
+    }
+
+    .flow-node {
+      position: relative;
+      padding: .8rem .7rem;
+      border: 1px solid var(--line);
+      border-radius: .7rem;
+      color: var(--navy);
+      background: var(--surface);
+      font-size: .78rem;
+      font-weight: 740;
+      text-align: center;
+    }
+
+    .flow-node:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      right: -.58rem;
+      top: 50%;
+      z-index: 1;
+      transform: translateY(-50%);
+      color: var(--teal);
+      font-size: 1rem;
+    }
+
+    .benchmark-figure {
+      margin: 0;
+      padding: 1.05rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .benchmark-figure svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 510px;
+    }
+
+    figcaption {
+      margin-top: .75rem;
+      color: var(--muted);
+      font-size: .8rem;
+    }
+
+    .metric {
+      min-height: 8.6rem;
+      padding: 1rem 1.05rem;
+      border: 1px solid var(--line);
+      border-radius: .9rem;
+      background: var(--surface);
+    }
+
+    .metric-label {
+      display: block;
+      color: var(--muted);
+      font-size: .72rem;
+      font-weight: 760;
+      letter-spacing: .075em;
+      text-transform: uppercase;
+    }
+
+    .metric-value {
+      display: block;
+      margin: .45rem 0 .3rem;
+      color: var(--navy-deep);
+      font-size: clamp(1.25rem,2.5vw,1.9rem);
+      font-weight: 780;
+      line-height: 1.1;
+    }
+
+    .metric-note {
+      color: var(--muted);
+      font-size: .69rem;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(2,minmax(0,1fr));
+      gap: 1.1rem;
+      margin-top: 1.3rem;
+    }
+
+    .result-card {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .result-card img {
+      display: block;
+      width: 100%;
+      min-height: 250px;
+      object-fit: contain;
+      background: #edf2f0;
+    }
+
+    .result-copy { padding: 1rem 1.1rem 1.12rem; }
+    .result-copy h3 { margin: 0 0 .35rem; font-size: 1.05rem; }
+    .result-copy p { margin: 0; color: var(--muted); font-size: .83rem; }
+
+    .image-missing {
+      display: none;
+      min-height: 250px;
+      padding: 2rem;
+      place-items: center;
+      color: var(--muted);
+      background: #edf2f1;
+      text-align: center;
+    }
+
+    .image-missing strong {
+      display: block;
+      margin-bottom: .4rem;
+      color: var(--navy);
+    }
+
+    .image-missing code {
+      display: inline-block;
+      margin-top: .55rem;
+      word-break: break-all;
+    }
+
+    .check-list, .plain-list, .file-list { padding-left: 1.25rem; }
+    .check-list li, .plain-list li, .file-list li { margin: .44rem 0; }
+    .check-list li::marker { color: var(--green); }
+
+    .syntax {
+      display: inline-grid;
+      grid-template-columns: auto auto auto;
+      gap: .55rem;
+      align-items: center;
+      margin: .45rem 0;
+      padding: .7rem .9rem;
+      border: 1px solid var(--line);
+      border-radius: .7rem;
+      color: var(--navy);
+      background: var(--surface-2);
+      font-family: var(--mono);
+      font-size: .83rem;
+    }
+
+    .syntax .optional { color: var(--muted); }
+
+    .pill {
+      display: inline-block;
+      padding: .18rem .4rem;
+      border-radius: 999px;
+      color: #fff;
+      background: var(--blue);
+      font-size: .65rem;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    footer {
+      padding: 2rem 1.25rem 2.6rem;
+      color: #bed0d1;
+      background: var(--navy-deep);
+    }
+
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 2rem;
+      width: min(1180px,100%);
+      margin: 0 auto;
+      font-size: .8rem;
+    }
+
+    .footer-inner p { margin: 0; }
+
+    @media (max-width: 920px) {
+      .layout { grid-template-columns: minmax(0,1fr); gap: 1.2rem; }
+      .toc-wrap {
+        position: relative;
+        top: auto;
+        z-index: 2;
+        min-width: 0;
+        padding: .68rem;
+        border: 1px solid var(--line);
+        border-radius: .8rem;
+        background: rgba(246,244,237,.96);
+      }
+      .toc { display: flex; overflow-x: auto; border-left: 0; scrollbar-width: thin; }
+      .toc li { flex: 0 0 auto; }
+      .toc a { margin: 0; border-left: 0; border-bottom: 3px solid transparent; white-space: nowrap; }
+      .toc a:hover, .toc a[aria-current="true"] {
+        border-left: 0;
+        border-bottom-color: var(--teal);
+        background: rgba(8,127,117,.07);
+      }
+      .toc-label, .toc-actions { display: none; }
+      .metric-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .flow { grid-template-columns: 1fr; }
+      .flow-node:not(:last-child)::after {
+        content: "↓";
+        right: auto;
+        top: auto;
+        bottom: -.76rem;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+    }
+
+    @media (max-width: 680px) {
+      .hero { min-height: 0; }
+      .hero-inner { width: min(100% - 1.4rem,1180px); padding: 3.5rem 0 3rem; }
+      .layout { width: min(100% - 1.4rem,1180px); padding-top: 1.5rem; }
+      section { margin-bottom: 3.9rem; }
+      .lead-card, .grid-2, .grid-3, .result-grid, .metric-grid { grid-template-columns: minmax(0,1fr); }
+      .algorithm li { grid-template-columns: 2.35rem minmax(0,1fr); gap: .68rem; padding: .9rem; }
+      .algorithm li::before { width: 2.2rem; height: 2.2rem; }
+      .definition-grid { grid-template-columns: 1fr; gap: .1rem; }
+      .definition-grid dd { margin-bottom: .7rem; }
+      .footer-inner { display: block; }
+      .footer-inner p + p { margin-top: .5rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        transition-duration: .01ms !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+
+    @media print {
+      @page { size: A4; margin: 14mm 13mm; }
+      body { color: #111; background: #fff; font-size: 9.2pt; }
+      .hero { min-height: 0; color: #111; background: #fff; border-bottom: 2px solid #111; }
+      .hero-inner { width: 100%; padding: 0 0 8mm; }
+      .hero h1, .hero-deck, .hero .eyebrow { color: #111; }
+      .hero-badges, .toc-wrap, .copy-button, .skip-link { display: none !important; }
+      .layout { display: block; width: 100%; padding: 8mm 0 0; }
+      section { margin-bottom: 10mm; }
+      h2, h3 { break-after: avoid; }
+      .lead-card, .panel, .callout, .equation, .metric, .result-card, .algorithm li, .table-scroll {
+        box-shadow: none;
+        break-inside: avoid;
+      }
+      .table-scroll { overflow: visible; }
+      .keyword-table { min-width: 0; font-size: 6.8pt; }
+      th, td { padding: 3.5pt; }
+      .code-block { border-color: #777; background: #f5f5f5; box-shadow: none; break-inside: avoid; }
+      .code-label, pre { color: #111; background: #f5f5f5; }
+      a { color: #111; text-decoration: none; }
+      footer { color: #111; background: #fff; border-top: 1px solid #999; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to documentation</a>
+
+  <header class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow">Model · solver · reproducibility</p>
+      <h1>AT2 phase-field fracture in FEniCSx</h1>
+      <p class="hero-deck">
+        Governing equations, finite-element discretization, transactional staggered
+        solution, mixed-mode boundary schemes, spatial material coefficients,
+        strict line-oriented input files, and verified output for a
+        single-edge-notched benchmark.
+      </p>
+      <div class="hero-badges" aria-label="Implementation attributes">
+        <span class="badge"><span class="badge-dot" aria-hidden="true"></span>Model 1.1.0</span>
+        <span class="badge">DOLFINx 0.11</span>
+        <span class="badge">AT2 · spectral split</span>
+        <span class="badge">KKT phase constraints</span>
+        <span class="badge">Mixed mode · graded materials</span>
+        <span class="badge">Adaptive load cutback</span>
+        <span class="badge">Offline guide</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="toc-wrap" aria-label="Page navigation">
+      <p class="toc-label">On this page</p>
+      <nav>
+        <ol class="toc">
+          <li><a href="#overview">Implementation</a></li>
+          <li><a href="#equations">Governing equations</a></li>
+          <li><a href="#discretization">Discretization</a></li>
+          <li><a href="#benchmark">Benchmark</a></li>
+          <li><a href="#algorithm">Solver algorithm</a></li>
+          <li><a href="#input-file">Input file</a></li>
+          <li><a href="#installation">Installation</a></li>
+          <li><a href="#running">Run and configure</a></li>
+          <li><a href="#verification">Verification</a></li>
+          <li><a href="#results">Verified results</a></li>
+          <li><a href="#outputs">Output contract</a></li>
+          <li><a href="#limitations">Limitations</a></li>
+        </ol>
+      </nav>
+      <div class="toc-actions">
+        <button class="quiet-button" id="print-page" type="button">Print / PDF</button>
+        <a class="quiet-button" href="installation.html">Installation guide</a>
+        <a class="quiet-button" href="../phasefield_crack.py">Solver code</a>
+        <a class="quiet-button" href="../inputs/notched_tension.in">Example input</a>
+      </div>
+    </aside>
+
+    <main id="main-content">
+      <section id="overview">
+        <p class="section-kicker">01 · Implementation</p>
+        <h2>What the program solves</h2>
+        <div class="lead-card">
+          <div>
+            <p>
+              The program solves quasi-static brittle fracture in a two-dimensional
+              isotropic solid. A displacement field describes deformation and a scalar
+              intactness field regularizes a crack over a finite length scale. Tensile
+              elastic energy drives fracture; compressive elastic energy remains
+              undegraded. Accepted load states satisfy mechanical equilibrium, a
+              bound-constrained phase subproblem, irreversibility, and coupled residual
+              criteria.
+            </p>
+          </div>
+          <div class="model-card">
+            <strong>Phase convention</strong>
+            φ = 1 denotes intact material.<br>
+            φ = 0 denotes fully broken material.<br>
+            Units are kN and mm with unit out-of-plane thickness.
+          </div>
+        </div>
+
+        <div class="grid-3" style="margin-top: 1rem;">
+          <article class="panel">
+            <h3>Physics</h3>
+            <p>Small-strain isotropic elasticity with uniform, analytic-gradient, or region-overridden coefficients; a smoothed spectral split; normalized stiffness degradation; AT2 fracture energy; and maximum-tensile-energy history.</p>
+          </article>
+          <article class="panel">
+            <h3>Numerics</h3>
+            <p>CG1 displacement and phase fields, DG0 history, consistent-tangent Newton mechanics, KKT-checked phase minimization, staggered coupling, rollback, and load cutback.</p>
+          </article>
+          <article class="panel">
+            <h3>Audit trail</h3>
+            <p>Configuration and material provenance, accepted-state CSV, atomic status summary, vector reactions, force balance, crack-path and energy diagnostics, XDMF/HDF5 fields, PNG plots, and explicit failure reporting.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="equations">
+        <p class="section-kicker">02 · Mathematical model</p>
+        <h2>Governing equations</h2>
+        <p class="section-intro">
+          Let Ω = [0,W] × [0,H] be the specimen. The primary unknowns are
+          displacement u: Ω → ℝ² and intactness φ: Ω → [0,1]. The history H stores
+          the largest tensile-energy density reached by an accepted load state.
+        </p>
+
+        <dl class="definition-grid">
+          <dt>u, v</dt><dd>displacement and admissible displacement test function</dd>
+          <dt>φ, q</dt><dd>intactness and scalar phase test function</dd>
+          <dt>ε(u)</dt><dd>small-strain tensor</dd>
+          <dt>ψ<sup>±</sup></dt><dd>tensile and compressive spectral elastic energies</dd>
+          <dt>H</dt><dd>cellwise irreversible tensile-energy history</dd>
+          <dt>E, ν</dt><dd>Young modulus and Poisson ratio; constants or DG0 spatial fields</dd>
+          <dt>G<sub>c</sub>, ℓ</dt><dd>fracture toughness and regularization length; constants or DG0 spatial fields</dd>
+          <dt>k<sub>res</sub></dt><dd>residual stiffness of fully broken material</dd>
+        </dl>
+
+        <h3>Kinematics and elastic constants</h3>
+        <div class="equation">
+          <span class="equation-label">Small strain</span>
+          <div class="math">ε(u) = sym ∇u = ½(∇u + ∇u<sup>T</sup>)</div>
+        </div>
+
+        <div class="equation">
+          <span class="equation-label">Lamé parameters</span>
+          <div class="math small">
+            μ(x) = E(x) / [2(1+ν(x))]
+          </div>
+          <div class="math small">
+            λ<sub>plane strain</sub>(x) = E(x)ν(x) / [(1+ν(x))(1−2ν(x))],
+            &nbsp;&nbsp;
+            λ<sub>plane stress</sub>(x) = E(x)ν(x) / (1−ν(x)²)
+          </div>
+        </div>
+
+        <div class="equation">
+          <span class="equation-label">Built-in linear material profiles</span>
+          <div class="math small">
+            p<sub>x</sub>(x,y) = p<sub>0</sub> + (p<sub>1</sub>−p<sub>0</sub>)x/W,
+            &nbsp;&nbsp;
+            p<sub>y</sub>(x,y) = p<sub>0</sub> + (p<sub>1</sub>−p<sub>0</sub>)y/H
+          </div>
+          <p class="where">
+            Here p is E, ν, G<sub>c</sub>, or ℓ. Ordinary material keywords give
+            the left/bottom values; their <code>*_end</code> partners give the
+            right/top values. File mode also supports constant, linear, affine,
+            box-region, and circular-region definitions.
+          </p>
+        </div>
+
+        <h3>Smoothed spectral split</h3>
+        <p>
+          For the symmetric 2 × 2 strain tensor, the implementation evaluates the two
+          principal strains analytically. A small smoothing η makes the spectral
+          residual differentiable at zero strain and repeated eigenvalues.
+        </p>
+
+        <div class="equation">
+          <span class="equation-label">Principal strains and Macaulay parts</span>
+          <div class="math small">
+            d = √[(ε<sub>xx</sub>−ε<sub>yy</sub>)² + 4ε<sub>xy</sub>² + η²],
+            &nbsp;
+            ε<sub>1,2</sub> = ½(tr ε ± d)
+          </div>
+          <div class="math small">
+            ⟨z⟩<sub>±</sub> = ½[z ± √(z²+η²)]
+          </div>
+        </div>
+
+        <div class="equation">
+          <span class="equation-label">Tensile and compressive energy</span>
+          <div class="math small">
+            ψ<sup>±</sup>(ε) =
+            ½λ⟨tr ε⟩<sub>±</sub><sup>2</sup>
+            + μ[⟨ε<sub>1</sub>⟩<sub>±</sub><sup>2</sup>
+            + ⟨ε<sub>2</sub>⟩<sub>±</sub><sup>2</sup>]
+          </div>
+          <p class="where">Default smoothing: η = 10<sup>−10</sup>.</p>
+        </div>
+
+        <h3>Stiffness degradation and energy densities</h3>
+        <div class="equation">
+          <span class="equation-label">Normalized degradation</span>
+          <div class="math">
+            g(φ) = k<sub>res</sub> + (1−k<sub>res</sub>)φ²,
+            &nbsp; g(0)=k<sub>res</sub>, &nbsp; g(1)=1
+          </div>
+        </div>
+
+        <div class="equation">
+          <span class="equation-label">Elastic and AT2 fracture density</span>
+          <div class="math small">
+            Ψ<sub>e</sub>(u,φ) = g(φ)ψ<sup>+</sup>(ε(u)) + ψ<sup>−</sup>(ε(u))
+          </div>
+          <div class="math small">
+            Ψ<sub>f</sub>(φ) = G<sub>c</sub>[(1−φ)²/(2ℓ) + ℓ|∇φ|²/2]
+          </div>
+        </div>
+
+        <div class="equation">
+          <span class="equation-label">Instantaneous internal energy reported to CSV</span>
+          <div class="math">
+            E<sub>inst</sub> = ∫<sub>Ω</sub>[Ψ<sub>e</sub>(u,φ)+Ψ<sub>f</sub>(φ)] dΩ
+          </div>
+          <p class="where">
+            This is a physical snapshot based on the current strain. It is distinct
+            from the history-driven quadratic potential used inside the phase solve.
+          </p>
+        </div>
+
+        <h3>Mechanical equilibrium</h3>
+        <div class="equation">
+          <span class="equation-label">Stress and weak residual</span>
+          <div class="math small">
+            σ(u,φ) = ∂Ψ<sub>e</sub>/∂ε,
+            &nbsp;&nbsp;
+            R<sub>u</sub>(u;v) = ∫<sub>Ω</sub> σ(u,φ):ε(v) dΩ = 0
+          </div>
+          <p class="where">
+            The consistent Newton tangent is J<sub>u</sub> = ∂R<sub>u</sub>/∂u,
+            generated by UFL differentiation. For graded materials, σ uses the
+            local DG0 Lamé coefficients on each cell.
+          </p>
+        </div>
+
+        <h3>History and phase evolution</h3>
+        <div class="equation">
+          <span class="equation-label">Accepted-state history</span>
+          <div class="math">
+            H<sub>n+1</sub>(x) =
+            max[H<sub>n</sub>(x), ψ<sup>+</sup>(ε(u<sub>n+1</sub>(x)))]
+          </div>
+        </div>
+
+        <div class="equation">
+          <span class="equation-label">Phase weak equation at fixed H</span>
+          <div class="math small">
+            ∫<sub>Ω</sub>{
+            G<sub>c</sub>ℓ∇φ·∇q
+            + [G<sub>c</sub>/ℓ + 2(1−k<sub>res</sub>)H]φq
+            }dΩ
+            = ∫<sub>Ω</sub>(G<sub>c</sub>/ℓ)q dΩ
+          </div>
+          <p class="where">
+            When material data vary, G<sub>c</sub>(x) and ℓ(x) are retained
+            inside every integral; they are not replaced by domain averages.
+          </p>
+        </div>
+
+        <div class="equation">
+          <span class="equation-label">Discrete constrained phase minimization</span>
+          <div class="math small">
+            minimize<sub>φ</sub>
+            &nbsp; ½φ<sup>T</sup>A(H)φ − b<sup>T</sup>φ
+            &nbsp; subject to &nbsp;
+            0 ≤ φ ≤ φ<sub>n</sub>,
+            &nbsp; φ = 0 on the starter-notch degrees of freedom
+          </div>
+          <p class="where">
+            The clipped unconstrained solution is only an initial candidate. When its
+            projected gradient exceeds tolerance, L-BFGS-B solves the box-constrained
+            quadratic. Acceptance requires the projected KKT residual to pass.
+          </p>
+        </div>
+
+        <div class="grid-2">
+          <article class="panel">
+            <h3>KKT sign conditions</h3>
+            <p>
+              With r = Aφ−b: r = 0 at free interior degrees of freedom,
+              r ≥ 0 at a lower bound, and r ≤ 0 at an upper bound. Fixed notch
+              degrees of freedom are excluded from the projected residual.
+            </p>
+          </article>
+          <article class="panel">
+            <h3>Natural phase boundary</h3>
+            <p>
+              Where no phase value is imposed, integration by parts gives the no-flux
+              condition (G<sub>c</sub>ℓ∇φ)·n = 0. Because G<sub>c</sub>ℓ is positive,
+              this is equivalent to ∇φ·n = 0. The internal starter-notch nodes remain
+              fixed at φ = 0.
+            </p>
+          </article>
+        </div>
+
+        <h3>Response and crack diagnostics</h3>
+        <div class="equation">
+          <span class="equation-label">Discrete grip reactions and integrated damage</span>
+          <div class="math small">
+            R<sub>Γ,i</sub> = Σ<sub>a∈dofs(Γ,i)</sub>
+            [r<sub>u</sub><sup>unconstrained</sup>]<sub>a</sub>,
+            &nbsp;&nbsp;
+            D = ∫<sub>Ω</sub>(1−φ)dΩ
+          </div>
+          <p class="where">
+            The code sums owned entries of the assembled mechanical residual before
+            essential-condition elimination; the PETSc backend then applies an MPI
+            reduction. Top-plus-bottom sums are reported as force-balance checks.
+          </p>
+        </div>
+        <p>
+          The reported crack front is the largest x-coordinate in the mesh-connected
+          component of nodes satisfying φ ≤ 0.2 and attached to the starter notch.
+          Crack extension is max(0, x<sub>front</sub>−a<sub>0</sub>). Connectivity
+          prevents isolated damaged islands from being counted as the main crack.
+          Mixed-mode output additionally records the connected tip coordinates,
+          graph path length, kink angle, and connected-node count.
+        </p>
+      </section>
+
+      <section id="discretization">
+        <p class="section-kicker">03 · Finite elements</p>
+        <h2>Discretization and assembled systems</h2>
+
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th scope="col">Field</th><th scope="col">Space</th><th scope="col">Storage and role</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Displacement u</td><td>[CG1]²</td><td>Continuous vector-valued linear Lagrange basis on triangles</td></tr>
+              <tr><td>Intactness φ</td><td>CG1</td><td>Continuous scalar linear Lagrange basis; nodal bounds enforce no healing</td></tr>
+              <tr><td>History H</td><td>DG0</td><td>One discontinuous constant value per triangle</td></tr>
+              <tr><td>E, ν, G<sub>c</sub>, ℓ</td><td>DG0</td><td>Static cellwise material coefficients; constant in uniform mode</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="grid-3">
+          <article class="panel">
+            <h3>Mesh</h3>
+            <p>A structured W × H rectangle is divided into n<sub>x</sub> × n<sub>y</sub> rectangles and split into 2n<sub>x</sub>n<sub>y</sub> right triangles.</p>
+          </article>
+          <article class="panel">
+            <h3>Resolution measure</h3>
+            <p>The actual largest triangle edge is h = √[(W/n<sub>x</sub>)²+(H/n<sub>y</sub>)²]. Strict mode requires h/min<sub>Ω</sub>ℓ ≤ 0.5, equivalent to the cellwise rule on this uniform structured mesh.</p>
+          </article>
+          <article class="panel">
+            <h3>History representation</h3>
+            <p>CG1 displacement gives cellwise-constant strain on affine triangles, so ψ<sup>+</sup> and H are represented once per cell by DG0.</p>
+          </article>
+        </div>
+
+        <h3>Assembly and linear algebra</h3>
+        <p>
+          DOLFINx creates the mesh and spaces, FFCx compiles the UFL forms, and DOLFINx
+          assembles native sparse matrices and vectors. On native Windows, matrices are
+          converted to SciPy CSR and solved with <code>scipy.sparse.linalg.spsolve</code>.
+          Vector-space BSR matrices are explicitly converted to CSR. A singular,
+          rank-deficient, nonfinite, or nonconvergent solve becomes a clear runtime
+          failure that can trigger load rollback.
+        </p>
+
+        <div class="callout warning">
+          <h3>Serial execution</h3>
+          <p>
+            This backend requires exactly one MPI rank. The finite-element formulation
+            is independent of that deployment choice, but the included SciPy solve is
+            not a parallel PETSc implementation.
+          </p>
+          <p>
+            For institute clusters, use the separate
+            <a href="../linux_cluster/README.md">Linux PETSc/MPI backend</a>. It uses
+            distributed DOLFINx meshes, PETSc SNES/SNESVI, collective XDMF/HDF5, and
+            supplied launch templates for genuine 16- or 32-rank jobs.
+          </p>
+        </div>
+      </section>
+
+      <section id="benchmark">
+        <p class="section-kicker">04 · Boundary-value problem</p>
+        <h2>Single-edge-notched tension</h2>
+        <p class="section-intro">
+          The default configuration is a unit-square specimen with a horizontal
+          internal starter notch and displacement-controlled vertical tension.
+        </p>
+
+        <div class="grid-2">
+          <figure class="benchmark-figure">
+            <svg viewBox="0 0 520 540" role="img" aria-labelledby="bench-title bench-desc">
+              <title id="bench-title">Single-edge-notched tension benchmark</title>
+              <desc id="bench-desc">A square specimen has a horizontal starter notch from the left edge at mid-height, prescribed upward displacement along the top, vertical supports along the bottom, and one horizontal pin at the lower-left corner.</desc>
+              <defs>
+                <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M0 0L10 5L0 10z" fill="#087f75"/>
+                </marker>
+                <pattern id="mesh" width="36" height="36" patternUnits="userSpaceOnUse">
+                  <path d="M0 0H36V36H0ZM0 0L36 36M36 0L0 36" fill="none" stroke="#d7e1de" stroke-width="1"/>
+                </pattern>
+              </defs>
+              <rect x="100" y="75" width="330" height="330" rx="2" fill="#fbfdfb" stroke="#173c4a" stroke-width="3"/>
+              <rect x="100" y="75" width="330" height="330" fill="url(#mesh)" opacity=".65"/>
+              <line x1="100" y1="240" x2="166" y2="240" stroke="#a9433e" stroke-width="9" stroke-linecap="round"/>
+              <circle cx="166" cy="240" r="7" fill="#a9433e"/>
+              <text x="111" y="224" fill="#8a342f" font-size="15" font-weight="700">φ = 0 starter notch</text>
+              <text x="111" y="259" fill="#8a342f" font-size="13">a₀ = 0.20 mm</text>
+              <line x1="125" y1="58" x2="125" y2="21" stroke="#087f75" stroke-width="3" marker-end="url(#arrow)"/>
+              <line x1="200" y1="58" x2="200" y2="21" stroke="#087f75" stroke-width="3" marker-end="url(#arrow)"/>
+              <line x1="275" y1="58" x2="275" y2="21" stroke="#087f75" stroke-width="3" marker-end="url(#arrow)"/>
+              <line x1="350" y1="58" x2="350" y2="21" stroke="#087f75" stroke-width="3" marker-end="url(#arrow)"/>
+              <line x1="425" y1="58" x2="425" y2="21" stroke="#087f75" stroke-width="3" marker-end="url(#arrow)"/>
+              <text x="207" y="17" fill="#05615a" font-size="16" font-weight="700">uᵧ = U(t)</text>
+              <path d="M110 420l-12 18h24z M185 420l-12 18h24z M260 420l-12 18h24z M335 420l-12 18h24z M410 420l-12 18h24z" fill="none" stroke="#173c4a" stroke-width="2"/>
+              <line x1="88" y1="442" x2="432" y2="442" stroke="#173c4a" stroke-width="2"/>
+              <text x="193" y="470" fill="#173c4a" font-size="15" font-weight="700">uᵧ = 0</text>
+              <circle cx="100" cy="405" r="7" fill="#d88116"/>
+              <text x="40" y="494" fill="#76500f" font-size="14" font-weight="700">lower-left: uₓ = 0</text>
+              <line x1="77" y1="75" x2="77" y2="405" stroke="#5a6c73" stroke-width="1.5"/>
+              <line x1="70" y1="75" x2="84" y2="75" stroke="#5a6c73" stroke-width="1.5"/>
+              <line x1="70" y1="405" x2="84" y2="405" stroke="#5a6c73" stroke-width="1.5"/>
+              <text x="27" y="246" fill="#5a6c73" font-size="14" transform="rotate(-90 27 246)">H = 1.00 mm</text>
+              <line x1="100" y1="425" x2="430" y2="425" stroke="#5a6c73" stroke-width="1.5"/>
+              <line x1="100" y1="418" x2="100" y2="432" stroke="#5a6c73" stroke-width="1.5"/>
+              <line x1="430" y1="418" x2="430" y2="432" stroke="#5a6c73" stroke-width="1.5"/>
+              <text x="224" y="421" fill="#5a6c73" font-size="14">W = 1.00 mm</text>
+            </svg>
+            <figcaption>
+              Top horizontal motion is unconstrained. Side edges are traction-free.
+              The starter notch is an internal φ = 0 constraint, not a geometric slit.
+            </figcaption>
+          </figure>
+
+          <div>
+            <div class="table-scroll" style="margin-top:0;">
+              <table>
+                <thead><tr><th scope="col">Default setting</th><th scope="col">Value</th></tr></thead>
+                <tbody>
+                  <tr><td>Width × height</td><td>1.00 × 1.00 mm</td></tr>
+                  <tr><td>Starter notch</td><td>0.20 mm at y = 0.50 mm</td></tr>
+                  <tr><td>Mesh</td><td>100 × 100 rectangles; 20,000 triangles</td></tr>
+                  <tr><td>Young modulus E</td><td>210 kN/mm²</td></tr>
+                  <tr><td>Poisson ratio ν</td><td>0.30</td></tr>
+                  <tr><td>Fracture toughness G<sub>c</sub></td><td>2.7 × 10<sup>−3</sup> kN/mm</td></tr>
+                  <tr><td>Length scale ℓ</td><td>0.030 mm</td></tr>
+                  <tr><td>Residual stiffness</td><td>1 × 10<sup>−8</sup></td></tr>
+                  <tr><td>Kinematic assumption</td><td>Plane strain</td></tr>
+                  <tr><td>Top displacement</td><td>0 → 0.015 mm</td></tr>
+                  <tr><td>Nominal increments</td><td>60</td></tr>
+                  <tr><td>Maximum staggered iterations</td><td>250 per attempted load</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h3>Essential conditions</h3>
+            <ul class="plain-list">
+              <li>u<sub>y</sub> = 0 along the bottom edge.</li>
+              <li>u<sub>x</sub> = 0 at the lower-left vertex to remove horizontal rigid translation.</li>
+              <li>u<sub>y</sub> = U<sub>max</sub>t along the top edge.</li>
+              <li>φ = 0 at nodes with y = H/2 and x ≤ a<sub>0</sub>.</li>
+            </ul>
+            <p>
+              The mesh validator requires even <code>ny</code> and integer
+              <code>notch_length / (width / nx)</code>, so the notch lies exactly on
+              mesh vertices.
+            </p>
+          </div>
+        </div>
+
+        <h3>Configurable mixed-mode kinematics</h3>
+        <p>
+          Let Δ(t) = t(U<sub>s</sub>,U<sub>o</sub>), where
+          U<sub>o</sub> is <code>max_displacement</code> and U<sub>s</sub> is the
+          signed <code>max_sliding_displacement</code>. All schemes use the same
+          pseudo-time, so a load cutback scales opening and sliding together and
+          preserves their prescribed ratio.
+        </p>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th scope="col">mechanical_bc_scheme</th><th scope="col">Bottom edge</th><th scope="col">Top edge</th><th scope="col">Use</th></tr></thead>
+            <tbody>
+              <tr><td><code>legacy_roller_pin</code></td><td>u<sub>y</sub>=0; lower-left u<sub>x</sub>=0</td><td>u<sub>y</sub>=tU<sub>o</sub>; u<sub>x</sub> free</td><td>Exact backward-compatible mode-I benchmark. U<sub>s</sub> must be zero.</td></tr>
+              <tr><td><code>relative_clamped</code></td><td>u=(0,0)</td><td>u=Δ(t)</td><td>Full relative opening/sliding motion is placed on the top edge.</td></tr>
+              <tr><td><code>symmetric_clamped</code></td><td>u=−Δ(t)/2</td><td>u=+Δ(t)/2</td><td>The same relative motion is centered about zero.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="code-block">
+          <div class="code-label"><span>Mixed-mode input</span><button class="copy-button" type="button">Copy</button></div>
+          <pre><span>mechanical_bc_scheme relative_clamped
+max_displacement 5.0e-4
+max_sliding_displacement 2.5e-4</span></pre>
+        </div>
+        <p>
+          Run the checked example with
+          <code>python phasefield_crack.py -in inputs/mixed_mode.in</code>.
+          The imposed ratio U<sub>s</sub>/U<sub>o</sub> is a boundary-kinematics
+          ratio, not K<sub>II</sub>/K<sub>I</sub>; geometry, finite boundaries,
+          elastic gradients, and crack evolution determine the near-tip mixity.
+        </p>
+      </section>
+
+      <section id="algorithm">
+        <p class="section-kicker">05 · Nonlinear solution</p>
+        <h2>Transactional staggered algorithm</h2>
+        <p class="section-intro">
+          During an attempted load, the last accepted u<sub>n</sub>, φ<sub>n</sub>,
+          and H<sub>n</sub> remain immutable. A trial becomes physical history only
+          after every convergence gate passes.
+        </p>
+
+        <div class="flow" aria-label="Solver flow">
+          <div class="flow-node">Accepted state</div>
+          <div class="flow-node">Target load</div>
+          <div class="flow-node">u → H → φ</div>
+          <div class="flow-node">Convergence gates</div>
+          <div class="flow-node">Commit or rollback</div>
+        </div>
+
+        <ol class="algorithm">
+          <li>
+            <div>
+              <strong>Validate and construct</strong>
+              <p>Check geometry, boundary scheme, material mode, pointwise material ranges, mesh alignment, local h/ℓ, tolerances, and output controls. Create mesh, DG0 material coefficients, adjacency, function spaces, boundary conditions, UFL forms, and the run manifest.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Initialize the diffuse notch</strong>
+              <p>Set u = 0, φ = 1, and H = 0; set notch nodes to φ = 0; then solve the constrained phase problem once at zero load to equilibrate the regularized notch profile.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Propose a load target</strong>
+              <p>Begin with nominal Δt = 1/N and t<sub>trial</sub> = min(1,t<sub>n</sub>+Δt). Snapshot u, φ, H, and active-bound visit counters before applying both opening and sliding values for the selected boundary scheme.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Solve displacement by Newton</strong>
+              <p>At fixed φ, assemble the nonlinear mechanical residual and consistent tangent. Apply lifted essential conditions, solve a sparse Newton update, update u, and require free residual, increment, and boundary-violation limits.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Rebuild trial history</strong>
+              <p>Interpolate ψ<sup>+</sup>(u) into DG0 and assign H = max(H<sub>n</sub>,ψ<sup>+</sup>). Rebuilding from H<sub>n</sub> prevents inner solver iterates from becoming fictitious load history.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Solve the phase subproblem</strong>
+              <p>Assemble A(H)φ = b with local G<sub>c</sub> and ℓ coefficients, solve the unconstrained system for a starting candidate, apply bounds 0 ≤ φ ≤ φ<sub>n</sub>, and run L-BFGS-B when the projected KKT residual requires it.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Test coupled equilibrium</strong>
+              <p>Reassemble the mechanical residual after the phase update. Accept the staggered iterate only when phase increment ≤ 10<sup>−5</sup>, phase KKT residual ≤ 10<sup>−8</sup>, and free mechanical residual ≤ 10<sup>−6</sup>.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Commit the state</strong>
+              <p>Append one CSV row with opening/sliding values, vector reactions, force balance, and crack-path diagnostics; optionally write XDMF fields; reset the consecutive-cutback count; and advance accepted pseudo-time. Only committed states appear in output histories.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Rollback and adapt when needed</strong>
+              <p>If Newton, phase optimization, or staggered convergence fails, restore every snapshot, multiply Δt by 0.5, and retry from the same accepted state. Opening and sliding remain proportional to the retried pseudo-time.</p>
+              <div class="branch">
+                A reduced increment grows one level toward nominal only after three
+                consecutive accepted steps with no cutback and at most 10 staggered
+                iterations. More than eight consecutive cutbacks produces an explicit
+                terminal failure and an auditable partial summary.
+              </div>
+            </div>
+          </li>
+          <li>
+            <div>
+              <strong>Finalize</strong>
+              <p>Close field files, rewrite the accepted-state CSV, generate plots, and atomically replace summary.json with completed status. Post-processing errors are also captured as failed status.</p>
+            </div>
+          </li>
+        </ol>
+
+        <div class="grid-3">
+          <article class="panel">
+            <h3>Newton defaults</h3>
+            <ul class="plain-list">
+              <li>25 maximum Newton updates</li>
+              <li>10<sup>−8</sup> relative residual</li>
+              <li>10<sup>−10</sup> absolute residual</li>
+              <li>10<sup>−10</sup> increment / BC limit</li>
+            </ul>
+          </article>
+          <article class="panel">
+            <h3>Phase defaults</h3>
+            <ul class="plain-list">
+              <li>10<sup>−8</sup> projected KKT limit</li>
+              <li>200 optimizer iterations</li>
+              <li>10<sup>−15</sup> optimizer function tolerance</li>
+              <li>40 line-search steps</li>
+            </ul>
+          </article>
+          <article class="panel">
+            <h3>Load defaults</h3>
+            <ul class="plain-list">
+              <li>60 nominal increments</li>
+              <li>0.5 cutback factor</li>
+              <li>8 maximum consecutive cutbacks</li>
+              <li>3 easy steps before growth</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="input-file">
+        <p class="section-kicker">06 · Line-oriented configuration</p>
+        <h2>LAMMPS-style input files</h2>
+        <p class="section-intro">
+          An input file is a readable sequence of keyword–value commands. Every
+          <code>SimulationConfig</code> field is available, so complete studies do not
+          require editing Python. Parsing is deliberately strict and fails before an
+          expensive finite-element solve.
+        </p>
+
+        <h3>Grammar</h3>
+        <div class="syntax" aria-label="Input line grammar">
+          <span>keyword</span><span>value</span><span class="optional"># optional comment</span>
+        </div>
+        <ul class="plain-list">
+          <li>Use exactly one keyword and one scalar value per nonempty line.</li>
+          <li>Keywords are case-insensitive and use the field names listed below.</li>
+          <li>Blank lines and lines beginning with <code>#</code> are ignored.</li>
+          <li>An unquoted <code>#</code> begins an inline comment.</li>
+          <li>Quote string values containing spaces or <code>#</code> with single or double quotes.</li>
+          <li>Boolean values accept <code>true/false</code>, <code>yes/no</code>, <code>on/off</code>, or <code>1/0</code>, case-insensitively.</li>
+          <li>Integer fields require integer tokens; floating fields accept decimal or scientific notation and must be finite.</li>
+          <li>Each keyword may appear at most once, including case variants.</li>
+          <li>An input file containing only blanks and comments is rejected.</li>
+          <li>There is no separate <code>run</code> keyword; invoking the Python command parses, validates, and runs the simulation.</li>
+          <li>Expressions, variables, environment expansion, line continuation, nested includes, and unit conversion are not supported.</li>
+        </ul>
+
+        <div class="code-block">
+          <div class="code-label"><span>Representative input</span><button class="copy-button" type="button">Copy</button></div>
+          <pre><span># Geometry and mesh
+width 1.0
+height 1.0
+notch_length 0.20
+nx 40
+ny 40
+
+# Material and model
+young_modulus 210.0
+young_modulus_end 210.0
+poisson_ratio 0.30
+poisson_ratio_end 0.30
+fracture_toughness 2.7e-3
+fracture_toughness_end 2.7e-3
+length_scale 0.080
+length_scale_end 0.080
+material_mode uniform
+material_file none
+residual_stiffness 1.0e-8
+plane_stress false
+
+# Load and output
+mechanical_bc_scheme legacy_roller_pin
+max_displacement 0.015
+max_sliding_displacement 0.0
+load_steps 60
+output_directory "results/case 01"
+write_xdmf true
+write_material_fields true
+make_plots true
+verbose true</span></pre>
+        </div>
+
+        <p>
+          Omitted keywords retain their base values. The checked example
+          <a href="../inputs/notched_tension.in">inputs/notched_tension.in</a> lists
+          all 42 keywords and is validated by the automated tests.
+          Input-file paths and relative output directories are resolved from the
+          process working directory. A relative <code>material_file</code> read from
+          the main input is instead anchored at that input's directory, so a case
+          and its material description remain portable together. An explicit relative
+          <code>--material-file</code> override is resolved from the working directory.
+        </p>
+
+        <h3>Complete keyword reference</h3>
+        <div class="table-scroll">
+          <table class="keyword-table">
+            <thead>
+              <tr><th scope="col">Keyword</th><th scope="col">Type / unit</th><th scope="col">Default</th><th scope="col">Meaning and validation</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>width</td><td>float · mm</td><td>1.0</td><td>Specimen width; must be positive.</td></tr>
+              <tr><td>height</td><td>float · mm</td><td>1.0</td><td>Specimen height; must be positive.</td></tr>
+              <tr><td>notch_length</td><td>float · mm</td><td>0.20</td><td>Starter-notch length; strictly between zero and width and aligned with x-mesh vertices.</td></tr>
+              <tr><td>nx</td><td>integer · divisions</td><td>100</td><td>Rectangle divisions in x; at least 2 and compatible with notch alignment.</td></tr>
+              <tr><td>ny</td><td>integer · divisions</td><td>100</td><td>Rectangle divisions in y; at least 2 and even so y = height/2 contains vertices.</td></tr>
+
+              <tr><td>young_modulus</td><td>float · kN/mm²</td><td>210.0</td><td>E; must be positive.</td></tr>
+              <tr><td>poisson_ratio</td><td>float · —</td><td>0.30</td><td>ν; admissible range −0.99 &lt; ν &lt; 0.5.</td></tr>
+              <tr><td>fracture_toughness</td><td>float · kN/mm</td><td>2.7e-3</td><td>G<sub>c</sub>; must be positive.</td></tr>
+              <tr><td>length_scale</td><td>float · mm</td><td>0.030</td><td>AT2 regularization length ℓ; must be positive and resolved by the mesh in strict mode.</td></tr>
+              <tr><td>young_modulus_end</td><td>float · kN/mm²</td><td>210.0</td><td>E at x=W or y=H in a linear material mode; positive.</td></tr>
+              <tr><td>poisson_ratio_end</td><td>float · —</td><td>0.30</td><td>ν at x=W or y=H; −0.99 &lt; ν &lt; 0.5.</td></tr>
+              <tr><td>fracture_toughness_end</td><td>float · kN/mm</td><td>2.7e-3</td><td>G<sub>c</sub> at x=W or y=H; positive.</td></tr>
+              <tr><td>length_scale_end</td><td>float · mm</td><td>0.030</td><td>ℓ at x=W or y=H; positive and included in the resolution check.</td></tr>
+              <tr><td>material_mode</td><td>string · —</td><td>uniform</td><td><code>uniform</code>, <code>linear_x</code>, <code>linear_y</code>, or <code>file</code>.</td></tr>
+              <tr><td>material_file</td><td>string · path</td><td>none</td><td>Required by file mode; relative paths are resolved beside the main input file.</td></tr>
+              <tr><td>residual_stiffness</td><td>float · —</td><td>1.0e-8</td><td>k<sub>res</sub>; strictly between zero and one.</td></tr>
+              <tr><td>plane_stress</td><td>boolean · —</td><td>false</td><td><code>false</code> selects plane strain; <code>true</code> selects effective plane stress.</td></tr>
+
+              <tr><td>mechanical_bc_scheme</td><td>string · —</td><td>legacy_roller_pin</td><td><code>legacy_roller_pin</code>, <code>relative_clamped</code>, or <code>symmetric_clamped</code>.</td></tr>
+              <tr><td>max_displacement</td><td>float · mm</td><td>0.015</td><td>Final relative opening displacement; nonnegative.</td></tr>
+              <tr><td>max_sliding_displacement</td><td>float · mm</td><td>0.0</td><td>Signed final relative sliding displacement; legacy scheme requires zero.</td></tr>
+              <tr><td>load_steps</td><td>integer · increments</td><td>60</td><td>Nominal load increments N; at least 1. Cutbacks can increase accepted-step count.</td></tr>
+
+              <tr><td>max_newton_iterations</td><td>integer · iterations</td><td>25</td><td>Maximum displacement Newton updates per mechanics solve; positive.</td></tr>
+              <tr><td>newton_relative_tolerance</td><td>float · —</td><td>1.0e-8</td><td>Relative free-residual tolerance; positive.</td></tr>
+              <tr><td>newton_absolute_tolerance</td><td>float · kN</td><td>1.0e-10</td><td>Absolute assembled free-residual tolerance; positive.</td></tr>
+              <tr><td>newton_increment_tolerance</td><td>float · mm</td><td>1.0e-10</td><td>Infinity-norm increment and essential-BC tolerance; positive.</td></tr>
+              <tr><td>max_staggered_iterations</td><td>integer · iterations</td><td>250</td><td>Maximum u–H–φ alternations per attempted load; positive.</td></tr>
+              <tr><td>staggered_tolerance</td><td>float · —</td><td>1.0e-5</td><td>Infinity-norm phase-increment acceptance limit; positive.</td></tr>
+              <tr><td>staggered_mechanical_tolerance</td><td>float · kN</td><td>1.0e-6</td><td>Free mechanical residual after the phase update; positive.</td></tr>
+              <tr><td>phase_kkt_tolerance</td><td>float · kN·mm</td><td>1.0e-8</td><td>Projected-gradient acceptance limit for the constrained phase subproblem; positive.</td></tr>
+              <tr><td>phase_optimizer_max_iterations</td><td>integer · iterations</td><td>200</td><td>Maximum L-BFGS-B iterations; positive.</td></tr>
+              <tr><td>spectral_smoothing</td><td>float · strain</td><td>1.0e-10</td><td>η in the smooth principal-strain split; positive.</td></tr>
+              <tr><td>max_load_cutbacks</td><td>integer · retries</td><td>8</td><td>Allowed consecutive load reductions before terminal failure; nonnegative.</td></tr>
+              <tr><td>load_cutback_factor</td><td>float · —</td><td>0.5</td><td>Multiplier applied to Δt after a rejected trial; strictly between zero and one.</td></tr>
+              <tr><td>load_growth_patience</td><td>integer · steps</td><td>3</td><td>Easy accepted steps required before growing a reduced increment; positive.</td></tr>
+              <tr><td>load_growth_iteration_threshold</td><td>integer · iterations</td><td>10</td><td>Maximum staggered iterations for a step to count as easy; positive.</td></tr>
+
+              <tr><td>output_directory</td><td>string · path</td><td>results/default</td><td>Output path; quote when it contains spaces or <code>#</code>. Must be nonempty.</td></tr>
+              <tr><td>write_every</td><td>integer · steps</td><td>1</td><td>XDMF output cadence in accepted steps; at least 1. Initial and final states are always written when enabled.</td></tr>
+              <tr><td>write_xdmf</td><td>boolean · —</td><td>true</td><td>Enable displacement and phase XDMF/HDF5 histories.</td></tr>
+              <tr><td>write_material_fields</td><td>boolean · —</td><td>true</td><td>Write static DG0 E, ν, G<sub>c</sub>, and ℓ once to <code>material_fields.xdmf/.h5</code>, independently of write_xdmf.</td></tr>
+              <tr><td>make_plots</td><td>boolean · —</td><td>true</td><td>Generate load curve and final phase PNGs after completion.</td></tr>
+              <tr><td>strict_mesh_resolution</td><td>boolean · —</td><td>true</td><td>When true, reject h/ℓ &gt; 0.5.</td></tr>
+              <tr><td>verbose</td><td>boolean · —</td><td>true</td><td>Print accepted steps and cutback retries to the console.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Spatial material modes</h3>
+        <div class="grid-2">
+          <article class="panel">
+            <h4>Built-in gradients</h4>
+            <p>
+              <code>linear_x</code> interpolates every material property from its
+              ordinary value at x=0 to its <code>*_end</code> value at x=W.
+              <code>linear_y</code> does the same from y=0 to y=H. Uniform mode
+              ignores the end values.
+            </p>
+            <div class="code-block">
+              <pre><span>material_mode linear_x
+young_modulus 210.0
+young_modulus_end 105.0
+fracture_toughness 2.7e-3
+fracture_toughness_end 1.8e-3</span></pre>
+            </div>
+          </article>
+          <article class="panel">
+            <h4>File-defined regions</h4>
+            <p>
+              File mode combines whole-domain profiles with prioritized box or
+              circle overrides. The coefficients are evaluated at cell centers and
+              stored as DG0 fields.
+            </p>
+            <div class="code-block">
+              <pre><span>material_mode file
+material_file materials/inclusion.material
+write_material_fields true</span></pre>
+            </div>
+          </article>
+        </div>
+
+        <div class="syntax" aria-label="Material file command grammar">
+          <span>profile | region | override</span><span>command arguments</span><span class="optional"># optional comment</span>
+        </div>
+        <div class="code-block">
+          <div class="code-label"><span>Material-file grammar and inclusion</span><button class="copy-button" type="button">Copy</button></div>
+          <pre><span>profile PROPERTY constant VALUE
+profile PROPERTY linear_x LEFT RIGHT
+profile PROPERTY linear_y BOTTOM TOP
+profile PROPERTY affine ORIGIN DX DY
+
+region NAME box XMIN XMAX YMIN YMAX PRIORITY
+region NAME circle CX CY RADIUS PRIORITY
+override NAME PROPERTY VALUE
+
+# Example
+profile young_modulus constant 210.0
+profile poisson_ratio constant 0.30
+profile fracture_toughness constant 2.7e-3
+profile length_scale constant 0.150
+region stiff_inclusion circle 0.65 0.50 0.12 20
+override stiff_inclusion young_modulus 420.0</span></pre>
+        </div>
+        <p>
+          <code>PROPERTY</code> is <code>young_modulus</code>,
+          <code>poisson_ratio</code>, <code>fracture_toughness</code>, or
+          <code>length_scale</code>. An affine profile is
+          p(x,y)=ORIGIN+DX·x+DY·y. Higher-priority regions win where regions
+          overlap, and priorities must be unique. Positive/range checks are applied to every cell, and strict
+          resolution uses the local ℓ. Curved interfaces are cell-midpoint
+          stair-step approximations unless the mesh is refined.
+        </p>
+        <p>
+          Commands/properties are case-insensitive. At most one explicit profile is
+          allowed per property; an omitted profile inherits the ordinary main-input
+          value as a constant. Region names and integer priorities are unique, and
+          override pairs cannot be duplicated. Blank lines and <code>#</code> comments
+          are allowed.
+        </p>
+
+        <h3>Runnable configuration examples</h3>
+        <div class="grid-3">
+          <article class="panel"><h4>Mixed mode</h4><p><a href="../inputs/mixed_mode.in">inputs/mixed_mode.in</a> combines relative opening and signed sliding.</p></article>
+          <article class="panel"><h4>Analytic gradient</h4><p><a href="../inputs/graded_linear_x.in">inputs/graded_linear_x.in</a> grades material data from left to right.</p></article>
+          <article class="panel"><h4>Inclusion file</h4><p><a href="../inputs/graded_file.in">inputs/graded_file.in</a> references <a href="../inputs/materials/inclusion.material">materials/inclusion.material</a>.</p></article>
+        </div>
+
+        <h3>Precedence and execution</h3>
+        <div class="flow" aria-label="Configuration precedence">
+          <div class="flow-node">Built-in defaults</div>
+          <div class="flow-node">Optional --quick base</div>
+          <div class="flow-node">Input file</div>
+          <div class="flow-node">Explicit CLI flags</div>
+          <div class="flow-node">Final validation</div>
+        </div>
+        <p>
+          Later layers override earlier layers. This makes a checked input file reusable
+          while allowing one-off command-line changes. For example, the following uses
+          the file but sends output elsewhere and disables field history:
+        </p>
+
+        <div class="code-block">
+          <div class="code-label"><span>Input file plus CLI overrides</span><button class="copy-button" type="button">Copy</button></div>
+          <pre><span>python phasefield_crack.py -in inputs\notched_tension.in --output-dir results\trial_02 --no-xdmf</span></pre>
+        </div>
+
+        <h3>Strict error handling</h3>
+        <div class="grid-2">
+          <article class="panel">
+            <h4>Rejected during parsing</h4>
+            <ul class="plain-list">
+              <li>Missing or unreadable UTF-8 input file</li>
+              <li>Unknown keyword, with a close-name suggestion when available</li>
+              <li>Duplicate keyword and first-occurrence line number</li>
+              <li>Missing or extra argument</li>
+              <li>Invalid integer, float, boolean, or empty string</li>
+              <li>NaN or infinite floating-point value</li>
+            </ul>
+          </article>
+          <article class="panel">
+            <h4>Rejected during validation or construction</h4>
+            <ul class="plain-list">
+              <li>Invalid physical range or solver tolerance</li>
+              <li>Unknown boundary scheme, or sliding with the legacy scheme</li>
+              <li>Missing or malformed material file, profile, region, or override</li>
+              <li>Empty material region or nonphysical cellwise coefficient</li>
+              <li>Odd ny or notch/grid misalignment</li>
+              <li>Under-resolved local h/ℓ in strict mode</li>
+              <li>Invalid cutback or load-growth controls</li>
+              <li>Invalid output cadence</li>
+            </ul>
+          </article>
+        </div>
+        <p>
+          Main-input syntax and scalar configuration errors include the resolved path
+          and line number and exit before finite-element construction. Material-file,
+          region-cell, and pointwise coefficient checks complete while the DG0 fields
+          are constructed and still fail before the nonlinear solve begins.
+          See <a href="INPUT_FILE.md">INPUT_FILE.md</a> and
+          <a href="../phasefield_input.py">phasefield_input.py</a> for the standalone
+          reference and parser implementation.
+        </p>
+      </section>
+
+      <section id="installation">
+        <p class="section-kicker">07 · Environment</p>
+        <h2>Choose the installation for your platform</h2>
+        <p class="section-intro">
+          Both backends use Python 3.12 and FEniCSx 0.11 from conda-forge, but
+          their linear algebra and execution environments are intentionally separate.
+          The dedicated installation guide covers prerequisites, environment creation
+          and updates, verification, first runs, and troubleshooting.
+        </p>
+
+        <div class="grid-2">
+          <article class="panel">
+            <h3>Native Windows · serial SciPy</h3>
+            <p>
+              Install the one-rank development and workstation backend from
+              <a href="../environment.yml">environment.yml</a>, then verify form
+              compilation, assembly, and the SciPy solve.
+            </p>
+            <p><a href="installation.html#windows">Open Windows installation →</a></p>
+          </article>
+          <article class="panel">
+            <h3>Linux · PETSc/MPI</h3>
+            <p>
+              Install the distributed backend from
+              <a href="../linux_cluster/environment-linux.yml">environment-linux.yml</a>,
+              then verify MPI placement, PETSc solves, and collective XDMF/HDF5 at the
+              intended rank count.
+            </p>
+            <p><a href="installation.html#linux">Open Linux installation →</a></p>
+          </article>
+        </div>
+
+        <div class="callout warning">
+          <h3>Activate the selected environment before running</h3>
+          <p>
+            Windows uses <code>phasefield-fenicsx</code> with
+            <a href="../phasefield_crack.py">phasefield_crack.py</a>. Linux uses
+            <code>phasefield-fenicsx-linux</code> with the separate
+            <a href="../linux_cluster/phasefield_crack_petsc.py">PETSc/MPI solver</a>.
+            Do not mix MPI or PETSc packages between these environments.
+          </p>
+        </div>
+      </section>
+
+      <section id="running">
+        <p class="section-kicker">08 · Reproduce</p>
+        <h2>Run and configure</h2>
+
+        <h3>Checked input-file example</h3>
+        <div class="code-block">
+          <div class="code-label"><span>Recommended first run</span><button class="copy-button" type="button">Copy</button></div>
+          <pre><span>python phasefield_crack.py --input-file inputs\notched_tension.in</span></pre>
+        </div>
+
+        <h3>Built-in quick smoke test</h3>
+        <div class="code-block">
+          <div class="code-label"><span>Small resolved configuration</span><button class="copy-button" type="button">Copy</button></div>
+          <pre><span>python phasefield_crack.py --quick --output-dir results\quick</span></pre>
+        </div>
+        <p>
+          Quick mode uses 20 × 20 rectangles, ℓ = 0.150 mm, three nominal increments,
+          U<sub>max</sub> = 5 × 10<sup>−4</sup> mm, and 12 staggered iterations. It
+          checks installation and output plumbing rather than full crack growth.
+        </p>
+
+        <h3>Mixed-mode and heterogeneous examples</h3>
+        <div class="code-block">
+          <div class="code-label"><span>Checked example inputs</span><button class="copy-button" type="button">Copy</button></div>
+          <pre><span>python phasefield_crack.py -in inputs\mixed_mode.in
+python phasefield_crack.py -in inputs\graded_linear_x.in
+python phasefield_crack.py -in inputs\graded_file.in</span></pre>
+        </div>
+
+        <h3>Default benchmark</h3>
+        <div class="code-block">
+          <div class="code-label"><span>100 × 100 configuration</span><button class="copy-button" type="button">Copy</button></div>
+          <pre><span>python phasefield_crack.py --output-dir results\full</span></pre>
+        </div>
+
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th scope="col">CLI option</th><th scope="col">Effect</th></tr></thead>
+            <tbody>
+              <tr><td><code>-in PATH</code>, <code>--input-file PATH</code></td><td>Read line-oriented configuration from PATH.</td></tr>
+              <tr><td><code>--quick</code></td><td>Use quick-mode values as the base before input-file and CLI overrides.</td></tr>
+              <tr><td><code>--output-dir PATH</code></td><td>Override output directory.</td></tr>
+              <tr><td><code>--nx N</code>, <code>--ny N</code></td><td>Override structured mesh divisions.</td></tr>
+              <tr><td><code>--length-scale VALUE</code></td><td>Override ℓ in mm.</td></tr>
+              <tr><td><code>--steps N</code></td><td>Override nominal load steps.</td></tr>
+              <tr><td><code>--max-displacement VALUE</code></td><td>Override final relative opening displacement in mm.</td></tr>
+              <tr><td><code>--max-sliding-displacement VALUE</code></td><td>Override signed final relative sliding displacement in mm.</td></tr>
+              <tr><td><code>--mechanical-bc-scheme NAME</code></td><td>Select legacy roller-pin, relative-clamped, or symmetric-clamped loading.</td></tr>
+              <tr><td><code>--material-mode NAME</code></td><td>Select uniform, linear-x, linear-y, or file-defined coefficients.</td></tr>
+              <tr><td><code>--material-file PATH</code></td><td>Override the material file; a relative CLI path is resolved from the working directory.</td></tr>
+              <tr><td><code>--max-staggered N</code></td><td>Override maximum staggered iterations per attempted load.</td></tr>
+              <tr><td><code>--plane-stress</code></td><td>Set plane_stress true.</td></tr>
+              <tr><td><code>--no-xdmf</code></td><td>Set write_xdmf false.</td></tr>
+              <tr><td><code>--no-plots</code></td><td>Set make_plots false.</td></tr>
+              <tr><td><code>--quiet</code></td><td>Set verbose false.</td></tr>
+              <tr><td><code>--allow-underresolved-mesh</code></td><td>Set strict_mesh_resolution false for exploratory runs.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout">
+          <h3>Programmatic use</h3>
+          <p>
+            Python studies can import <code>SimulationConfig</code> and
+            <code>run_simulation</code> from <a href="../phasefield_crack.py">phasefield_crack.py</a>.
+            Use <code>dataclasses.replace</code> to create immutable parameter variants.
+          </p>
+        </div>
+      </section>
+
+      <section id="verification">
+        <p class="section-kicker">09 · Quality gates</p>
+        <h2>Verification</h2>
+        <p class="section-intro">
+          Automated checks cover constitutive identities, parser behavior, validation,
+          accepted-state invariants, rollback, output readability, and failure reporting.
+        </p>
+
+        <div class="grid-2">
+          <article class="panel">
+            <h3>Model and finite elements</h3>
+            <ul class="check-list">
+              <li>Degradation endpoints and monotonicity</li>
+              <li>Lamé parameters and tension/compression split</li>
+              <li>Mesh resolution and notch alignment</li>
+              <li>Rank-deficient sparse-system failure</li>
+              <li>End-to-end run with readable XDMF/HDF5</li>
+              <li>One history degree of freedom per triangle</li>
+            </ul>
+          </article>
+          <article class="panel">
+            <h3>Input and accepted states</h3>
+            <ul class="check-list">
+              <li>All 42 configuration keywords are supported</li>
+              <li>Comments, quotes, booleans, types, arity, duplicates, and diagnostics</li>
+              <li>Defaults → file → CLI precedence</li>
+              <li>Nondecreasing history and damage</li>
+              <li>Load rollback and reduced-increment recovery</li>
+              <li>Atomic partial summary on terminal failure</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="code-block">
+          <div class="code-label"><span>Run all tests</span><button class="copy-button" type="button">Copy</button></div>
+          <pre><span>python -m pytest -q</span></pre>
+        </div>
+
+        <h3>Accepted-step conditions</h3>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th scope="col">Condition</th><th scope="col">Default limit or rule</th></tr></thead>
+            <tbody>
+              <tr><td>Phase admissibility</td><td>0 ≤ φ<sub>n+1</sub> ≤ φ<sub>n</sub> ≤ 1</td></tr>
+              <tr><td>History irreversibility</td><td>H<sub>n+1</sub> ≥ H<sub>n</sub></td></tr>
+              <tr><td>Phase increment</td><td>‖Δφ‖<sub>∞</sub> ≤ 10<sup>−5</sup></td></tr>
+              <tr><td>Phase optimality</td><td>Projected KKT residual ≤ 10<sup>−8</sup></td></tr>
+              <tr><td>Coupled mechanics</td><td>Free residual after phase update ≤ 10<sup>−6</sup></td></tr>
+              <tr><td>Essential conditions</td><td>Boundary violation ≤ 10<sup>−10</sup></td></tr>
+              <tr><td>Accepted time</td><td>Strictly increasing and capped exactly at 1</td></tr>
+              <tr><td>Mesh resolution</td><td>h/ℓ(x) ≤ 0.5 on every cell in strict mode</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout warning">
+          <h3>Numerical verification is not material validation</h3>
+          <p>
+            Before drawing physical conclusions, repeat with finer meshes and smaller
+            nominal load increments, compare force, fracture energy, and crack path,
+            and calibrate E, ν, G<sub>c</sub>, and ℓ against independent material data.
+          </p>
+        </div>
+      </section>
+
+      <section id="results">
+        <p class="section-kicker">10 · Completed demonstration</p>
+        <h2>Verified crack-growth result</h2>
+        <p class="section-intro">
+          The displayed run used a resolved 30 × 30 mesh, ℓ = 0.10 mm, 45 nominal
+          increments, U<sub>max</sub> = 0.015 mm, plane strain, and 500 maximum
+          staggered iterations. It is a documented demonstration configuration, not
+          the built-in default mesh.
+        </p>
+
+        <div class="metric-grid" aria-label="Verified run metrics">
+          <article class="metric"><span class="metric-label">Status</span><span class="metric-value">Completed</span><span class="metric-note">summary.status</span></article>
+          <article class="metric"><span class="metric-label">Accepted steps</span><span class="metric-value">45</span><span class="metric-note">45 nominal; no subdivisions</span></article>
+          <article class="metric"><span class="metric-label">Peak reaction</span><span class="metric-value">0.641960 kN</span><span class="metric-note">at accepted step 15</span></article>
+          <article class="metric"><span class="metric-label">Crack extension</span><span class="metric-value">0.800 mm</span><span class="metric-note">connected φ ≤ 0.2 front</span></article>
+          <article class="metric"><span class="metric-label">Load cutbacks</span><span class="metric-value">0</span><span class="metric-note">summary.total_load_cutbacks</span></article>
+          <article class="metric"><span class="metric-label">Mesh ratio h / ℓ</span><span class="metric-value">0.471405</span><span class="metric-note">strict resolution passed</span></article>
+          <article class="metric"><span class="metric-label">Final phase KKT</span><span class="metric-value">8.03 × 10⁻¹⁰</span><span class="metric-note">below 10⁻⁸ limit</span></article>
+          <article class="metric"><span class="metric-label">Elapsed</span><span class="metric-value">51.70 s</span><span class="metric-note">recorded wall time</span></article>
+        </div>
+
+        <div class="result-grid">
+          <article class="result-card">
+            <img src="../results/demo/load_displacement.png" alt="Verified reaction force versus imposed vertical displacement curve">
+            <div class="image-missing" role="note"><div><strong>Load curve unavailable</strong>Generate the demo output and reload.<br><code>results\demo\load_displacement.png</code></div></div>
+            <div class="result-copy">
+              <h3>Load–displacement response</h3>
+              <p>The response reaches its peak and then drops as the connected crack advances across the specimen.</p>
+            </div>
+          </article>
+          <article class="result-card">
+            <img src="../results/demo/final_phase_field.png" alt="Verified final intactness field with zero broken and one intact">
+            <div class="image-missing" role="note"><div><strong>Phase contour unavailable</strong>Generate the demo output and reload.<br><code>results\demo\final_phase_field.png</code></div></div>
+            <div class="result-copy">
+              <h3>Final intactness field</h3>
+              <p>φ = 0 is broken and φ = 1 is intact; the damaged band remains connected to the starter notch.</p>
+            </div>
+          </article>
+        </div>
+
+        <div class="callout">
+          <h3>Final accepted-state checks</h3>
+          <p>
+            Free mechanical residual = 9.98 × 10<sup>−8</sup>, phase increment =
+            8.78 × 10<sup>−6</sup>, essential-boundary violation = 0, final reaction =
+            1.11 × 10<sup>−3</sup> kN, and final instantaneous internal energy =
+            3.440 × 10<sup>−3</sup> kN·mm.
+          </p>
+        </div>
+      </section>
+
+      <section id="outputs">
+        <p class="section-kicker">11 · Audit trail</p>
+        <h2>Output contract</h2>
+
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th scope="col">File</th><th scope="col">Contents</th><th scope="col">When written</th></tr></thead>
+            <tbody>
+              <tr><td><code>run_manifest.json</code></td><td>Model version, complete configuration, normalized material specification, source path/SHA, coefficient ranges, region cell counts, mesh/DOF data, and software versions</td><td>During construction</td></tr>
+              <tr><td><code>summary.json</code></td><td>Running, completed, or failed status; elapsed time; accepted/nominal steps; cutbacks; peak force; final accepted diagnostics; error when applicable</td><td>Atomically replaced throughout run</td></tr>
+              <tr><td><code>load_response.csv</code></td><td>One row per accepted state, including t = 0; response, energies, crack metrics, residuals, KKT, bounds, and load increments</td><td>Initial, failure, and completion</td></tr>
+              <tr><td><code>displacement.xdmf/.h5</code></td><td>Vector displacement fields at the configured accepted-state cadence</td><td>When write_xdmf is true</td></tr>
+              <tr><td><code>phase_field.xdmf/.h5</code></td><td>Scalar intactness fields at the same accepted times</td><td>When write_xdmf is true</td></tr>
+              <tr><td><code>material_fields.xdmf/.h5</code></td><td>Static DG0 Young modulus, Poisson ratio, fracture toughness, and length scale</td><td>Written once when write_material_fields is true</td></tr>
+              <tr><td><code>load_displacement.png</code></td><td>Top-y reaction versus relative opening and, when sliding is nonzero, top-x reaction versus relative sliding</td><td>After completion when make_plots is true</td></tr>
+              <tr><td><code>final_phase_field.png</code></td><td>Final intactness contour on the triangular mesh</td><td>After completion when make_plots is true</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>CSV column groups</h3>
+        <div class="grid-3">
+          <article class="panel">
+            <h4>Load and response</h4>
+            <p><code>step</code>, pseudo-time, <code>opening_displacement</code>, <code>sliding_displacement</code>, four top/bottom x/y reactions, two force-balance checks, energies, damage, and maximum history. Compatibility aliases remain <code>displacement=opening_displacement</code> and <code>reaction_force=top_reaction_y</code>.</p>
+          </article>
+          <article class="panel">
+            <h4>Crack and constraints</h4>
+            <p>Minimum phase, connected front/extension, <code>crack_tip_x/y</code>, graph path length, kink angle, connected-node count, phase KKT and increment, optimizer iterations, and active bounds.</p>
+          </article>
+          <article class="panel">
+            <h4>Convergence and adaptivity</h4>
+            <p>Staggered/Newton counts, residuals, increment, boundary violation, history increment, load increment, cutbacks, cumulative active-bound visits.</p>
+          </article>
+        </div>
+
+        <div class="callout warning">
+          <h3>Rejected trials are not output states</h3>
+          <p>
+            Rollback restores fields and cumulative counters before a smaller load is
+            attempted. A terminal failure leaves CSV and summary data for the last
+            accepted state and closes any open XDMF files.
+          </p>
+        </div>
+      </section>
+
+      <section id="limitations">
+        <p class="section-kicker">12 · Scope</p>
+        <h2>Limitations and extensions</h2>
+        <ul class="plain-list">
+          <li><strong>History-field approximation.</strong> The maximum-history formulation is an engineering approximation to the exact global irreversibility variational inequality, although each implemented phase subproblem enforces nodal bounds and KKT optimality.</li>
+          <li><strong>Diffuse starter notch.</strong> An internal φ = 0 line represents the flaw; the mesh contains no traction-free geometric slit.</li>
+          <li><strong>Two-dimensional split.</strong> The principal-strain model is explicitly 2D. Plane stress changes λ; it does not create a three-dimensional state.</li>
+          <li><strong>Two solver backends.</strong> This page's native-Windows SciPy backend is serial. The separate <a href="../linux_cluster/README.md">Linux PETSc/MPI backend</a> supports partitioned 16/32-rank cluster runs, subject to allocation-specific MPI and parallel-I/O validation.</li>
+          <li><strong>Resolution gate.</strong> h/ℓ ≤ 0.5 is a minimum discretization rule, not a mesh-convergence proof. Peak load, energy, and crack path still need refinement studies.</li>
+          <li><strong>Quasi-static load control.</strong> Cutback improves robustness but is not arc-length continuation. Severe snap-back can require energy control or an arc-length method.</li>
+          <li><strong>Crack-front threshold.</strong> φ ≤ 0.2 and mesh connectivity define a diagnostic only; they do not enter the evolution law.</li>
+          <li><strong>Mode-mix interpretation.</strong> The prescribed sliding/opening ratio is not K<sub>II</sub>/K<sub>I</sub>. Quantitative mode mixity requires a separate near-tip or interaction-integral calculation.</li>
+          <li><strong>Split and contact.</strong> Mixed-mode crack paths depend on the chosen spectral tension/compression split. The model has no separate frictional crack-face contact law, so closed-face shear transfer needs particular care.</li>
+          <li><strong>Spatial coefficients.</strong> Analytic gradients and material regions are stored as DG0 cellwise constants. Non-mesh-fitted interfaces and curved inclusions are midpoint-classified stair steps; material contrast can therefore expose mesh orientation bias.</li>
+          <li><strong>Higher-order spaces.</strong> DG0 history matches cellwise-constant strain for affine CG1 triangles. Higher-order displacement requires a quadrature history or a documented projection.</li>
+          <li><strong>No experimental calibration.</strong> The demonstration establishes reproducible numerical behavior, not predictive material validation.</li>
+        </ul>
+
+        <h3>Project files</h3>
+        <ul class="file-list">
+          <li><a href="../phasefield_crack.py">phasefield_crack.py</a> — finite-element model, solver, output, and CLI</li>
+          <li><a href="../phasefield_input.py">phasefield_input.py</a> — strict input parser</li>
+          <li><a href="../inputs/notched_tension.in">inputs/notched_tension.in</a> — complete checked input example</li>
+          <li><a href="../inputs/mixed_mode.in">inputs/mixed_mode.in</a> — relative-clamped mixed-mode example</li>
+          <li><a href="../inputs/graded_linear_x.in">inputs/graded_linear_x.in</a> — analytic left-to-right gradient example</li>
+          <li><a href="../inputs/graded_file.in">inputs/graded_file.in</a> and <a href="../inputs/materials/inclusion.material">inclusion.material</a> — file-defined inclusion example</li>
+          <li><a href="INPUT_FILE.md">INPUT_FILE.md</a> — standalone input syntax reference</li>
+          <li><a href="../tests/test_phasefield_crack.py">tests/test_phasefield_crack.py</a> — model and end-to-end tests</li>
+          <li><a href="../tests/test_phasefield_input.py">tests/test_phasefield_input.py</a> — input syntax and precedence tests</li>
+          <li><a href="../environment.yml">environment.yml</a> — Conda environment</li>
+          <li><a href="../linux_cluster/README.md">linux_cluster/README.md</a> — PETSc/MPI environment, preflight, and 16/32-rank scheduler guide</li>
+          <li><a href="../README.md">README.md</a> — compact project entry point</li>
+          <li><a href="PHASEFIELD_ALGORITHM_ACCEPTANCE_AND_CORRECTIONS.tex">Formal algorithm assessment · LaTeX</a> — editable standalone assessment source</li>
+          <li><a href="../output/pdf/PHASEFIELD_ALGORITHM_ACCEPTANCE_AND_CORRECTIONS.pdf">Formal algorithm assessment · PDF</a> — compiled standalone assessment document</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <p>AT2 phase-field fracture · model 1.1.0 · FEniCSx 0.11 · kN–mm units</p>
+      <p>Offline document: no external fonts, scripts, or stylesheets.</p>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var links = Array.prototype.slice.call(document.querySelectorAll(".toc a"));
+      var sections = links.map(function (link) {
+        return document.querySelector(link.getAttribute("href"));
+      }).filter(Boolean);
+
+      if ("IntersectionObserver" in window) {
+        var observer = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            links.forEach(function (link) {
+              var active = link.getAttribute("href") === "#" + entry.target.id;
+              if (active) link.setAttribute("aria-current", "true");
+              else link.removeAttribute("aria-current");
+            });
+          });
+        }, { rootMargin: "-15% 0px -72% 0px", threshold: 0 });
+        sections.forEach(function (section) { observer.observe(section); });
+      }
+
+      function copyText(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          return navigator.clipboard.writeText(text);
+        }
+        return new Promise(function (resolve, reject) {
+          var area = document.createElement("textarea");
+          area.value = text;
+          area.setAttribute("readonly", "");
+          area.style.position = "fixed";
+          area.style.opacity = "0";
+          document.body.appendChild(area);
+          area.select();
+          try {
+            if (document.execCommand("copy")) resolve();
+            else reject(new Error("Copy command unavailable."));
+          } catch (error) {
+            reject(error);
+          } finally {
+            document.body.removeChild(area);
+          }
+        });
+      }
+
+      document.querySelectorAll(".copy-button").forEach(function (button) {
+        button.addEventListener("click", function () {
+          var block = button.closest(".code-block");
+          var text = block ? block.querySelector("pre").innerText : "";
+          copyText(text).then(function () {
+            var original = button.textContent;
+            button.textContent = "Copied";
+            window.setTimeout(function () { button.textContent = original; }, 1400);
+          }).catch(function () {
+            button.textContent = "Select text";
+          });
+        });
+      });
+
+      document.querySelectorAll(".result-card img").forEach(function (img) {
+        function showMissing() {
+          img.style.display = "none";
+          var fallback = img.nextElementSibling;
+          if (fallback && fallback.classList.contains("image-missing")) {
+            fallback.style.display = "grid";
+          }
+        }
+        img.addEventListener("error", showMissing);
+        if (img.complete && img.naturalWidth === 0) showMissing();
+      });
+
+      var printButton = document.getElementById("print-page");
+      if (printButton) {
+        printButton.addEventListener("click", function () { window.print(); });
+      }
+    }());
+  </script>
+</body>
+</html>

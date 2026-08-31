@@ -1,0 +1,1096 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Offline installation guide for the native-Windows SciPy and Linux PETSc/MPI backends of the AT2 phase-field fracture solver.">
+  <title>Installation · AT2 phase-field fracture</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17262d;
+      --muted: #5a6c73;
+      --paper: #f6f4ed;
+      --surface: #fffdf8;
+      --surface-2: #edf3f1;
+      --line: #d5ddda;
+      --navy: #173c4a;
+      --navy-deep: #0d2933;
+      --teal: #087f75;
+      --teal-dark: #05615a;
+      --amber: #d88116;
+      --red: #a9433e;
+      --green: #2d7653;
+      --shadow: 0 16px 42px rgba(23, 60, 74, .10);
+      --radius: 17px;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --mono: "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: 1.25rem;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 7%, rgba(8,127,117,.12), transparent 25rem),
+        linear-gradient(180deg, #f2f1eb 0, var(--paper) 31rem);
+      font-family: var(--sans);
+      line-height: 1.62;
+      text-rendering: optimizeLegibility;
+    }
+
+    a {
+      color: var(--teal-dark);
+      text-decoration-thickness: .08em;
+      text-underline-offset: .16em;
+    }
+
+    a:hover { color: var(--navy); }
+
+    :focus-visible {
+      outline: 3px solid rgba(216,129,22,.9);
+      outline-offset: 3px;
+      border-radius: 4px;
+    }
+
+    .skip-link {
+      position: fixed;
+      z-index: 100;
+      top: .75rem;
+      left: .75rem;
+      transform: translateY(-180%);
+      padding: .7rem 1rem;
+      border-radius: .55rem;
+      color: #fff;
+      background: var(--navy-deep);
+    }
+
+    .skip-link:focus { transform: translateY(0); }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      color: #f7fbfa;
+      background:
+        linear-gradient(110deg, rgba(13,41,51,.99), rgba(23,60,74,.95) 62%, rgba(8,127,117,.87)),
+        repeating-linear-gradient(135deg, transparent 0 24px, rgba(255,255,255,.04) 25px 26px);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -7rem;
+      bottom: -18rem;
+      width: 34rem;
+      height: 34rem;
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 50%;
+      box-shadow: 0 0 0 4rem rgba(255,255,255,.03), 0 0 0 9rem rgba(255,255,255,.025);
+      pointer-events: none;
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      width: min(1180px, calc(100% - 2.5rem));
+      margin: 0 auto;
+      padding: 4.5rem 0 4rem;
+    }
+
+    .eyebrow {
+      margin: 0 0 1rem;
+      color: #bde9e3;
+      font-size: .78rem;
+      font-weight: 780;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+    }
+
+    .hero h1 {
+      max-width: 16ch;
+      margin: 0;
+      color: #fff;
+      font-size: clamp(2.65rem, 7vw, 5.7rem);
+      line-height: .98;
+      letter-spacing: -.055em;
+    }
+
+    .hero-deck {
+      max-width: 760px;
+      margin: 1.6rem 0 0;
+      color: #d9e9e7;
+      font-size: clamp(1rem, 2vw, 1.2rem);
+    }
+
+    .hero-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .55rem;
+      margin-top: 2rem;
+    }
+
+    .badge {
+      padding: .35rem .7rem;
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      font-size: .82rem;
+      font-weight: 650;
+      backdrop-filter: blur(8px);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 230px minmax(0,1fr);
+      gap: 3.2rem;
+      width: min(1180px, calc(100% - 2.5rem));
+      margin: 0 auto;
+      padding: 3.5rem 0 6rem;
+    }
+
+    .toc-wrap {
+      align-self: start;
+      position: sticky;
+      top: 1.5rem;
+    }
+
+    .toc-label {
+      margin: 0 0 .75rem;
+      color: var(--muted);
+      font-size: .71rem;
+      font-weight: 800;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .toc {
+      margin: 0;
+      padding: 0;
+      border-left: 1px solid var(--line);
+      list-style: none;
+    }
+
+    .toc a {
+      display: block;
+      margin-left: -1px;
+      padding: .43rem .75rem;
+      border-left: 3px solid transparent;
+      color: var(--muted);
+      font-size: .84rem;
+      text-decoration: none;
+      transition: color 150ms ease, border-color 150ms ease, background 150ms ease;
+    }
+
+    .toc a:hover,
+    .toc a[aria-current="true"] {
+      border-left-color: var(--teal);
+      color: var(--navy-deep);
+      background: linear-gradient(90deg, rgba(8,127,117,.09), transparent);
+    }
+
+    .toc-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+      margin-top: 1.1rem;
+    }
+
+    button { border: 0; font: inherit; cursor: pointer; }
+
+    .quiet-button {
+      display: inline-block;
+      padding: .46rem .68rem;
+      border: 1px solid var(--line);
+      border-radius: .5rem;
+      color: var(--navy);
+      background: rgba(255,255,255,.68);
+      font-size: .76rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    main { min-width: 0; }
+
+    section { margin-bottom: 5.8rem; }
+
+    .section-kicker {
+      margin: 0 0 .6rem;
+      color: var(--teal-dark);
+      font-size: .74rem;
+      font-weight: 850;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    h2, h3, h4 {
+      color: var(--navy-deep);
+      line-height: 1.15;
+    }
+
+    h2 {
+      margin: 0 0 1rem;
+      font-size: clamp(2rem, 4vw, 3.35rem);
+      letter-spacing: -.04em;
+    }
+
+    h3 { margin: 2.2rem 0 .8rem; font-size: 1.32rem; }
+    h4 { margin: 0 0 .55rem; font-size: 1rem; }
+    p { margin: 0 0 1rem; }
+
+    .section-intro {
+      max-width: 760px;
+      margin-bottom: 1.5rem;
+      color: var(--muted);
+      font-size: 1.06rem;
+    }
+
+    .lead-card,
+    .panel,
+    .callout,
+    .code-block,
+    .table-scroll {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .lead-card {
+      padding: clamp(1.3rem, 3vw, 2rem);
+      border-top: 4px solid var(--teal);
+      font-size: 1.04rem;
+    }
+
+    .grid-2,
+    .grid-3 {
+      display: grid;
+      min-width: 0;
+      gap: 1rem;
+    }
+
+    .grid-2 { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    .grid-3 { grid-template-columns: repeat(3,minmax(0,1fr)); }
+
+    .panel {
+      position: relative;
+      min-width: 0;
+      padding: 1.25rem;
+    }
+
+    .panel h3 { margin: 0 0 .55rem; }
+    .panel p:last-child, .panel ul:last-child { margin-bottom: 0; }
+
+    .platform-card {
+      overflow: hidden;
+      padding-top: 4.35rem;
+    }
+
+    .platform-card::before {
+      content: attr(data-platform);
+      position: absolute;
+      inset: 0 0 auto;
+      padding: .8rem 1.25rem;
+      color: #fff;
+      background: var(--navy);
+      font-size: .72rem;
+      font-weight: 850;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .platform-card.linux::before { background: var(--teal-dark); }
+
+    .tag {
+      display: inline-block;
+      margin: .2rem .3rem .2rem 0;
+      padding: .18rem .5rem;
+      border-radius: 999px;
+      color: var(--teal-dark);
+      background: rgba(8,127,117,.1);
+      font-size: .75rem;
+      font-weight: 750;
+    }
+
+    .callout {
+      margin: 1.3rem 0;
+      padding: 1.15rem 1.25rem 1.15rem 1.4rem;
+      border-left: 5px solid var(--teal);
+      box-shadow: none;
+    }
+
+    .callout.warning { border-left-color: var(--amber); background: #fffbf2; }
+    .callout.danger { border-left-color: var(--red); background: #fff8f7; }
+    .callout.success { border-left-color: var(--green); background: #f5fbf7; }
+    .callout h3, .callout h4 { margin-top: 0; }
+    .callout p:last-child { margin-bottom: 0; }
+
+    .step-list {
+      margin: 1.2rem 0 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: step;
+    }
+
+    .step-list > li {
+      display: grid;
+      grid-template-columns: 2.6rem minmax(0,1fr);
+      gap: .85rem;
+      margin-bottom: .85rem;
+      padding: 1rem 1.1rem;
+      border: 1px solid var(--line);
+      border-radius: .85rem;
+      background: rgba(255,253,248,.8);
+      counter-increment: step;
+    }
+
+    .step-list > li::before {
+      content: counter(step);
+      display: grid;
+      width: 2.25rem;
+      height: 2.25rem;
+      place-items: center;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--teal);
+      font-weight: 850;
+    }
+
+    .step-list h3 { margin: .3rem 0 .55rem; font-size: 1.08rem; }
+    .step-list p:last-child { margin-bottom: 0; }
+
+    .code-block {
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
+      margin: 1rem 0 1.3rem;
+      border-radius: .8rem;
+      border-color: #294853;
+      background: #102d37;
+      box-shadow: 0 12px 28px rgba(13,41,51,.15);
+    }
+
+    .code-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      min-height: 2.45rem;
+      padding: .45rem .7rem .45rem 1rem;
+      color: #c4d8d8;
+      background: #0d2933;
+      font-size: .73rem;
+      font-weight: 750;
+      letter-spacing: .04em;
+    }
+
+    .copy-button {
+      padding: .35rem .6rem;
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: .42rem;
+      color: #e9f5f3;
+      background: rgba(255,255,255,.08);
+      font-size: .7rem;
+      font-weight: 750;
+    }
+
+    pre {
+      overflow-x: auto;
+      margin: 0;
+      padding: 1rem;
+      color: #e7f1ef;
+      font-family: var(--mono);
+      font-size: .82rem;
+      line-height: 1.65;
+      tab-size: 2;
+    }
+
+    code {
+      padding: .09em .3em;
+      border-radius: .3em;
+      color: var(--navy-deep);
+      background: rgba(23,60,74,.08);
+      font-family: var(--mono);
+      font-size: .9em;
+    }
+
+    pre code, pre span { padding: 0; color: inherit; background: transparent; }
+
+    .check-list {
+      margin: .6rem 0 1rem;
+      padding: 0;
+      list-style: none;
+    }
+
+    .check-list li {
+      position: relative;
+      margin: .45rem 0;
+      padding-left: 1.5rem;
+    }
+
+    .check-list li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: var(--green);
+      font-weight: 900;
+    }
+
+    .table-scroll {
+      overflow-x: auto;
+      margin: 1.1rem 0 1.5rem;
+      border-radius: .85rem;
+    }
+
+    table {
+      width: 100%;
+      min-width: 620px;
+      border-collapse: collapse;
+      font-size: .9rem;
+    }
+
+    th, td {
+      padding: .75rem .85rem;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--navy-deep);
+      background: var(--surface-2);
+      font-size: .76rem;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    .source-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .6rem;
+      margin-top: 1rem;
+    }
+
+    .source-links a {
+      padding: .35rem .6rem;
+      border: 1px solid var(--line);
+      border-radius: .48rem;
+      background: rgba(255,255,255,.65);
+      font-size: .78rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    footer {
+      padding: 2rem 1.25rem 2.6rem;
+      color: #bed0d1;
+      background: var(--navy-deep);
+    }
+
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 2rem;
+      width: min(1180px,100%);
+      margin: 0 auto;
+      font-size: .8rem;
+    }
+
+    .footer-inner p { margin: 0; }
+
+    @media (max-width: 920px) {
+      .layout { grid-template-columns: minmax(0,1fr); gap: 1.2rem; }
+      .toc-wrap {
+        position: relative;
+        top: auto;
+        z-index: 2;
+        min-width: 0;
+        padding: .68rem;
+        border: 1px solid var(--line);
+        border-radius: .8rem;
+        background: rgba(246,244,237,.96);
+      }
+      .toc { display: flex; overflow-x: auto; border-left: 0; scrollbar-width: thin; }
+      .toc li { flex: 0 0 auto; }
+      .toc a { margin: 0; border-left: 0; border-bottom: 3px solid transparent; white-space: nowrap; }
+      .toc a:hover, .toc a[aria-current="true"] {
+        border-left: 0;
+        border-bottom-color: var(--teal);
+        background: rgba(8,127,117,.07);
+      }
+      .toc-label, .toc-actions { display: none; }
+    }
+
+    @media (max-width: 680px) {
+      .hero-inner { width: min(100% - 1.4rem,1180px); padding: 3.3rem 0 3rem; }
+      .layout { width: min(100% - 1.4rem,1180px); padding-top: 1.5rem; }
+      section { margin-bottom: 4rem; }
+      .grid-2, .grid-3 { grid-template-columns: minmax(0,1fr); }
+      .step-list > li { grid-template-columns: 2.35rem minmax(0,1fr); gap: .65rem; padding: .9rem; }
+      .footer-inner { display: block; }
+      .footer-inner p + p { margin-top: .5rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        transition-duration: .01ms !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+
+    @media print {
+      @page { size: A4; margin: 14mm 13mm; }
+      body { color: #111; background: #fff; font-size: 9.2pt; }
+      .hero { color: #111; background: #fff; border-bottom: 2px solid #111; }
+      .hero-inner { width: 100%; padding: 0 0 8mm; }
+      .hero h1, .hero-deck, .hero .eyebrow { color: #111; }
+      .hero-badges, .toc-wrap, .copy-button, .skip-link { display: none !important; }
+      .layout { display: block; width: 100%; padding: 8mm 0 0; }
+      section { margin-bottom: 10mm; }
+      h2, h3 { break-after: avoid; }
+      .lead-card, .panel, .callout, .step-list > li, .code-block, .table-scroll {
+        box-shadow: none;
+        break-inside: avoid;
+      }
+      .table-scroll { overflow: visible; }
+      table { min-width: 0; font-size: 7.5pt; }
+      th, td { padding: 3.5pt; }
+      .code-block { border-color: #777; background: #f5f5f5; }
+      .code-label, pre { color: #111; background: #f5f5f5; }
+      a { color: #111; text-decoration: none; }
+      footer { color: #111; background: #fff; border-top: 1px solid #999; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to installation guide</a>
+
+  <header class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow">Environment · verification · first run</p>
+      <h1>Install the phase-field solver</h1>
+      <p class="hero-deck">
+        Choose the native-Windows serial backend or the Linux PETSc/MPI backend,
+        create its pinned Conda environment, verify the complete numerical stack,
+        and run a checked smoke case before starting a fracture study.
+      </p>
+      <div class="hero-badges" aria-label="Supported installation paths">
+        <span class="badge">Windows · serial SciPy</span>
+        <span class="badge">Linux · PETSc/MPI</span>
+        <span class="badge">DOLFINx 0.11</span>
+        <span class="badge">Python 3.12</span>
+        <span class="badge">Conda-forge</span>
+        <span class="badge">Offline guide</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="toc-wrap" aria-label="Page navigation">
+      <p class="toc-label">On this page</p>
+      <nav>
+        <ol class="toc">
+          <li><a href="#choose-backend">Choose a backend</a></li>
+          <li><a href="#windows">Windows</a></li>
+          <li><a href="#linux">Linux</a></li>
+          <li><a href="#verification">Verification</a></li>
+          <li><a href="#first-run">First run</a></li>
+          <li><a href="#troubleshooting">Troubleshooting</a></li>
+        </ol>
+      </nav>
+      <div class="toc-actions">
+        <button class="quiet-button" id="print-page" type="button">Print / PDF</button>
+        <a class="quiet-button" href="index.html">Model guide</a>
+        <a class="quiet-button" href="../README.md">Project README</a>
+      </div>
+    </aside>
+
+    <main id="main-content">
+      <section id="choose-backend">
+        <p class="section-kicker">01 · Deployment choice</p>
+        <h2>Choose the backend before installing</h2>
+        <p class="section-intro">
+          The two programs use the same governing equations, input syntax, material
+          parser, and accepted-state logic. Their linear algebra and execution models
+          are deliberately separate.
+        </p>
+
+        <div class="grid-2">
+          <article class="panel platform-card" data-platform="Windows path">
+            <h3>Native Windows · SciPy</h3>
+            <p>
+              Use <a href="../phasefield_crack.py">phasefield_crack.py</a> for local
+              development, input preparation, and serial studies on Windows 10 or 11.
+              This backend must run with exactly one MPI rank.
+            </p>
+            <span class="tag">one process</span>
+            <span class="tag">SciPy sparse solve</span>
+            <span class="tag">PowerShell</span>
+            <p><a href="#windows">Install the Windows backend →</a></p>
+          </article>
+
+          <article class="panel platform-card linux" data-platform="Linux path">
+            <h3>Linux · PETSc/MPI</h3>
+            <p>
+              Use <a href="../linux_cluster/phasefield_crack_petsc.py">linux_cluster/phasefield_crack_petsc.py</a>
+              for distributed meshes, PETSc nonlinear solves, and collective XDMF/HDF5
+              output on a workstation or scheduled cluster allocation.
+            </p>
+            <span class="tag">multiple MPI ranks</span>
+            <span class="tag">PETSc SNES/SNESVI</span>
+            <span class="tag">Bash</span>
+            <p><a href="#linux">Install the Linux backend →</a></p>
+          </article>
+        </div>
+
+        <div class="callout warning">
+          <h3>Do not mix the environments</h3>
+          <p>
+            Create one environment per platform from the supplied YAML file. In
+            particular, do not add a pip-built <code>petsc4py</code> to the Linux
+            environment or launch its Conda-built MPI stack with an unrelated system
+            <code>mpiexec</code>.
+          </p>
+        </div>
+      </section>
+
+      <section id="windows">
+        <p class="section-kicker">02 · Native Windows</p>
+        <h2>Install the serial SciPy backend</h2>
+        <p class="section-intro">
+          Run these commands in PowerShell from the project root. The checked
+          <a href="../environment.yml">environment.yml</a> pins Python 3.12 and
+          FEniCSx/DOLFINx 0.11 from conda-forge.
+        </p>
+
+        <h3>Prerequisites</h3>
+        <div class="grid-3">
+          <article class="panel">
+            <h4>64-bit Windows</h4>
+            <p>Windows 10 or 11 on an x86-64 workstation.</p>
+          </article>
+          <article class="panel">
+            <h4>Miniconda</h4>
+            <p>A current 64-bit Miniconda installation with PowerShell integration.</p>
+          </article>
+          <article class="panel">
+            <h4>C++ build tools</h4>
+            <p>Visual Studio 2022 Build Tools with Desktop development with C++ and a current Windows SDK for local form compilation.</p>
+          </article>
+        </div>
+
+        <ol class="step-list">
+          <li>
+            <div>
+              <h3>Initialize Conda for PowerShell</h3>
+              <p>Use the Miniconda Prompt once, then close and reopen PowerShell.</p>
+              <div class="code-block">
+                <div class="code-label"><span>One-time shell setup</span><button class="copy-button" type="button">Copy</button></div>
+                <pre><span>conda init powershell</span></pre>
+              </div>
+              <p>If <code>conda activate</code> already works, skip this step.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>Create the checked environment</h3>
+              <p>Open PowerShell in the project root, where <code>environment.yml</code> is visible.</p>
+              <div class="code-block">
+                <div class="code-label"><span>Create once</span><button class="copy-button" type="button">Copy</button></div>
+                <pre><span>conda env create --file environment.yml
+conda activate phasefield-fenicsx</span></pre>
+              </div>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>Update an existing environment</h3>
+              <p>Synchronize the named environment after pulling project changes.</p>
+              <div class="code-block">
+                <div class="code-label"><span>Update and prune</span><button class="copy-button" type="button">Copy</button></div>
+                <pre><span>conda env update --name phasefield-fenicsx --file environment.yml --prune
+conda activate phasefield-fenicsx</span></pre>
+              </div>
+            </div>
+          </li>
+        </ol>
+
+        <div class="source-links" aria-label="Windows installation sources">
+          <a href="../environment.yml">Windows environment YAML</a>
+          <a href="../scripts/verify_fenicsx_install.py">Serial installation verifier</a>
+          <a href="../phasefield_crack.py">Windows solver</a>
+        </div>
+      </section>
+
+      <section id="linux">
+        <p class="section-kicker">03 · Linux workstation or cluster</p>
+        <h2>Install the PETSc/MPI backend</h2>
+        <p class="section-intro">
+          Copy or clone the complete project because the Linux backend imports shared
+          constitutive, input, material, and metric modules from the project root. Run
+          installation on a login or development host; run MPI simulations only on a
+          workstation or inside a compute allocation.
+        </p>
+
+        <h3>Prerequisites</h3>
+        <div class="grid-3">
+          <article class="panel">
+            <h4>64-bit Linux</h4>
+            <p>A current x86-64 Linux distribution with Bash and standard command-line tools.</p>
+          </article>
+          <article class="panel">
+            <h4>Miniconda or Miniforge</h4>
+            <p>Conda initialized for Bash. The supplied environment uses conda-forge only.</p>
+          </article>
+          <article class="panel">
+            <h4>Compute allocation</h4>
+            <p>Physical cores matching the requested rank count and, on a cluster, scheduler-approved compute resources.</p>
+          </article>
+        </div>
+
+        <ol class="step-list">
+          <li>
+            <div>
+              <h3>Initialize Conda for Bash</h3>
+              <p>Run once if <code>conda activate</code> is not available, then start a new shell.</p>
+              <div class="code-block">
+                <div class="code-label"><span>One-time shell setup</span><button class="copy-button" type="button">Copy</button></div>
+                <pre><span>conda init bash
+exec bash</span></pre>
+              </div>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>Create the ABI-compatible stack</h3>
+              <p>From the project root, create and activate the MPICH-based environment.</p>
+              <div class="code-block">
+                <div class="code-label"><span>Create once</span><button class="copy-button" type="button">Copy</button></div>
+                <pre><span>conda env create --file linux_cluster/environment-linux.yml
+conda activate phasefield-fenicsx-linux</span></pre>
+              </div>
+              <p>
+                Conda solves DOLFINx 0.11, real-scalar PETSc/petsc4py 3.25, mpi4py,
+                MPICH, and MPI-enabled HDF5 as one compatible stack.
+              </p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <h3>Update an existing environment</h3>
+              <p>Use the supplied lock-style specification rather than piecemeal package upgrades.</p>
+              <div class="code-block">
+                <div class="code-label"><span>Update and prune</span><button class="copy-button" type="button">Copy</button></div>
+                <pre><span>conda env update --name phasefield-fenicsx-linux \
+  --file linux_cluster/environment-linux.yml --prune
+conda activate phasefield-fenicsx-linux</span></pre>
+              </div>
+            </div>
+          </li>
+        </ol>
+
+        <div class="callout danger">
+          <h3>Keep MPI as one stack</h3>
+          <p>
+            Do not install a separate pip <code>petsc4py</code> over this environment.
+            Do not assume the cluster's system <code>mpirun</code> is compatible with
+            Conda MPICH. For high-speed multi-node fabrics, use an administrator-provided
+            FEniCSx/PETSc module, container, or Spack build compiled consistently against
+            the site MPI.
+          </p>
+        </div>
+
+        <div class="source-links" aria-label="Linux installation sources">
+          <a href="../linux_cluster/environment-linux.yml">Linux environment YAML</a>
+          <a href="../linux_cluster/check_environment.py">MPI/PETSc preflight</a>
+          <a href="../linux_cluster/run_linux.sh">Direct launcher</a>
+          <a href="../linux_cluster/README.md">Cluster guide</a>
+        </div>
+      </section>
+
+      <section id="verification">
+        <p class="section-kicker">04 · Quality gate</p>
+        <h2>Verify before solving</h2>
+        <p class="section-intro">
+          Import checks alone are not sufficient. Exercise form compilation, assembly,
+          the intended linear algebra, communicator placement, and output path before a
+          production run.
+        </p>
+
+        <h3>Windows serial verification</h3>
+        <div class="code-block">
+          <div class="code-label"><span>PowerShell · one rank</span><button class="copy-button" type="button">Copy</button></div>
+          <pre><span>conda activate phasefield-fenicsx
+python -c "import dolfinx, ffcx, ufl, basix, scipy; print('DOLFINx', dolfinx.__version__); print('FFCx', ffcx.__version__); print('UFL', ufl.__version__); print('Basix', basix.__version__); print('SciPy', scipy.__version__)"
+python scripts\verify_fenicsx_install.py</span></pre>
+        </div>
+        <p>
+          Success ends with <code>FENICSX_INSTALL_OK</code>. The verifier intentionally
+          rejects more than one MPI rank because it tests the native-Windows SciPy path.
+        </p>
+
+        <h3>Linux collective preflight</h3>
+        <p>
+          Run this inside the same compute allocation and at the same rank count planned
+          for the simulation. The one-host example below targets a 16-core workstation.
+        </p>
+        <div class="code-block">
+          <div class="code-label"><span>Bash · 16 ranks on one host</span><button class="copy-button" type="button">Copy</button></div>
+          <pre><span>conda activate phasefield-fenicsx-linux
+mpiexec -n 16 python -u linux_cluster/check_environment.py \
+  --expected-ranks 16 --expected-nodes 1 \
+  --check-xdmf results/preflight_16r</span></pre>
+        </div>
+        <p>
+          Change both rank values and <code>--expected-nodes</code> to match the actual
+          allocation. The preflight checks MPI and PETSc communicator agreement,
+          real-scalar PETSc, distributed KSP and SNESVI solves, rank placement, ghost
+          exchange, and collective XDMF/HDF5 write/read.
+        </p>
+
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th scope="col">Platform</th><th scope="col">Required evidence</th><th scope="col">Common mistake caught</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Windows</td><td><code>FENICSX_INSTALL_OK</code></td><td>Wrong Python, missing DLL/compiler, or broken serial assembly/solve</td></tr>
+              <tr><td>Linux</td><td>Preflight completes at the requested ranks and nodes</td><td>MPI ABI mismatch, incorrect placement, complex PETSc, or noncollective I/O</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="first-run">
+        <p class="section-kicker">05 · Smoke cases</p>
+        <h2>Run the smallest checked case</h2>
+        <p class="section-intro">
+          A smoke case confirms parser, solver, and output plumbing. It is not a mesh-
+          converged fracture result and should not be used for material conclusions.
+        </p>
+
+        <div class="grid-2">
+          <article class="panel">
+            <h3>Windows quick run</h3>
+            <p>Activate the serial environment and run from the project root.</p>
+            <div class="code-block">
+              <div class="code-label"><span>PowerShell</span><button class="copy-button" type="button">Copy</button></div>
+              <pre><span>conda activate phasefield-fenicsx
+python phasefield_crack.py --quick --output-dir results\quick</span></pre>
+            </div>
+            <p>For a checked input-file run:</p>
+            <div class="code-block">
+              <div class="code-label"><span>PowerShell · input file</span><button class="copy-button" type="button">Copy</button></div>
+              <pre><span>python phasefield_crack.py --input-file inputs\notched_tension.in</span></pre>
+            </div>
+          </article>
+
+          <article class="panel">
+            <h3>Linux 16-rank smoke run</h3>
+            <p>Run only after the collective preflight succeeds.</p>
+            <div class="code-block">
+              <div class="code-label"><span>Bash · one host</span><button class="copy-button" type="button">Copy</button></div>
+              <pre><span>conda activate phasefield-fenicsx-linux
+NPROCS=16 \
+INPUT_FILE=linux_cluster/inputs/cluster_smoke.in \
+OUTPUT_DIR=results/smoke_16r \
+bash linux_cluster/run_linux.sh</span></pre>
+            </div>
+            <p>On a 16-physical-core Xeon workstation, run the prepared validation suite:</p>
+            <div class="code-block">
+              <div class="code-label"><span>Bash · Xeon16 suite</span><button class="copy-button" type="button">Copy</button></div>
+              <pre><span>bash linux_cluster/run_xeon16_suite.sh smoke
+bash linux_cluster/run_xeon16_suite.sh validation
+SCALING_REPEATS=3 bash linux_cluster/run_xeon16_suite.sh scaling</span></pre>
+            </div>
+          </article>
+        </div>
+
+        <div class="callout success">
+          <h3>Installation is complete when</h3>
+          <ul class="check-list">
+            <li>The environment activates without import or shared-library errors.</li>
+            <li>The platform verifier completes with its expected rank count.</li>
+            <li>The smoke run reports completion and writes finite CSV/JSON output.</li>
+            <li>Requested XDMF/HDF5 output can be opened from the target filesystem.</li>
+          </ul>
+        </div>
+
+        <div class="source-links" aria-label="First-run sources">
+          <a href="../inputs/notched_tension.in">Windows example input</a>
+          <a href="../linux_cluster/inputs/cluster_smoke.in">Linux smoke input</a>
+          <a href="../linux_cluster/run_xeon16_suite.sh">Xeon16 suite launcher</a>
+          <a href="../linux_cluster/XEON16_TEST_PLAN.md">Xeon16 test plan</a>
+        </div>
+      </section>
+
+      <section id="troubleshooting">
+        <p class="section-kicker">06 · Diagnostics</p>
+        <h2>Troubleshooting by symptom</h2>
+        <p class="section-intro">
+          Fix the environment or launcher problem before changing fracture parameters.
+          Preserve the supplied YAML specifications while diagnosing the stack.
+        </p>
+
+        <div class="grid-2">
+          <article class="panel">
+            <h3><code>conda</code> is not recognized</h3>
+            <p>
+              Start a Miniconda/Miniforge prompt, run the platform's <code>conda init</code>
+              command once, then open a new shell. Confirm that <code>conda info</code>
+              succeeds before creating the environment.
+            </p>
+          </article>
+
+          <article class="panel">
+            <h3>Windows DLL or JIT failure</h3>
+            <p>
+              Activate <code>phasefield-fenicsx</code> in the current PowerShell. Confirm
+              the C++ workload and Windows SDK are installed, then rerun
+              <a href="../scripts/verify_fenicsx_install.py">the serial verifier</a>.
+              Do not invoke a different base Python executable.
+            </p>
+          </article>
+
+          <article class="panel">
+            <h3>Linux rank or communicator mismatch</h3>
+            <p>
+              Confirm the environment is active and inspect <code>which python</code> and
+              <code>which mpiexec</code>. The Python packages, PETSc, mpi4py, and launcher
+              must belong to one MPI implementation. Recreate the environment if it was
+              modified with pip.
+            </p>
+          </article>
+
+          <article class="panel">
+            <h3>Ranks placed on the wrong nodes</h3>
+            <p>
+              Request resources through the site scheduler and set expected ranks/nodes
+              to the allocation. Use the supplied Slurm or PBS template as a starting
+              point; queue, account, and launcher flags remain site-specific.
+            </p>
+          </article>
+
+          <article class="panel">
+            <h3>Collective XDMF/HDF5 failure</h3>
+            <p>
+              Use a path visible at the same location to every rank. Prefer shared
+              scratch for multi-node output, verify it with <code>--check-xdmf</code>, and
+              copy completed results to long-term storage afterward.
+            </p>
+          </article>
+
+          <article class="panel">
+            <h3>Smoke passes but a study fails</h3>
+            <p>
+              This is usually a model-resolution or nonlinear-convergence issue rather
+              than installation. Check mesh-to-length-scale resolution, load increments,
+              boundary conditions, material ranges, and solver diagnostics in the
+              <a href="index.html#verification">model guide</a>.
+            </p>
+          </article>
+        </div>
+
+        <div class="callout warning">
+          <h3>Cluster policy takes precedence</h3>
+          <p>
+            Do not run MPI simulations on an institute login node. Follow the local
+            scheduler, module, filesystem, and software policy. If the site supplies a
+            tuned PETSc/FEniCSx stack, validate it with the included preflight before use.
+          </p>
+        </div>
+
+        <div class="source-links" aria-label="Further documentation">
+          <a href="index.html">Governing equations and algorithm</a>
+          <a href="INPUT_FILE.md">Input-file reference</a>
+          <a href="../linux_cluster/README.md">Detailed Linux/HPC guide</a>
+          <a href="../README.md">Project entry point</a>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    <div class="footer-inner">
+      <p>AT2 phase-field fracture · FEniCSx 0.11 · Windows and Linux installation</p>
+      <p>Offline document: no external fonts, scripts, or stylesheets.</p>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var links = Array.prototype.slice.call(document.querySelectorAll(".toc a"));
+      var sections = links.map(function (link) {
+        return document.querySelector(link.getAttribute("href"));
+      }).filter(Boolean);
+
+      if ("IntersectionObserver" in window) {
+        var observer = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            links.forEach(function (link) {
+              var active = link.getAttribute("href") === "#" + entry.target.id;
+              if (active) link.setAttribute("aria-current", "true");
+              else link.removeAttribute("aria-current");
+            });
+          });
+        }, { rootMargin: "-15% 0px -72% 0px", threshold: 0 });
+        sections.forEach(function (section) { observer.observe(section); });
+      }
+
+      function copyText(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          return navigator.clipboard.writeText(text);
+        }
+        return new Promise(function (resolve, reject) {
+          var area = document.createElement("textarea");
+          area.value = text;
+          area.setAttribute("readonly", "");
+          area.style.position = "fixed";
+          area.style.opacity = "0";
+          document.body.appendChild(area);
+          area.select();
+          try {
+            if (document.execCommand("copy")) resolve();
+            else reject(new Error("Copy command unavailable."));
+          } catch (error) {
+            reject(error);
+          } finally {
+            document.body.removeChild(area);
+          }
+        });
+      }
+
+      document.querySelectorAll(".copy-button").forEach(function (button) {
+        button.addEventListener("click", function () {
+          var block = button.closest(".code-block");
+          var text = block ? block.querySelector("pre").innerText : "";
+          copyText(text).then(function () {
+            var original = button.textContent;
+            button.textContent = "Copied";
+            window.setTimeout(function () { button.textContent = original; }, 1400);
+          }).catch(function () {
+            button.textContent = "Select text";
+          });
+        });
+      });
+
+      var printButton = document.getElementById("print-page");
+      if (printButton) {
+        printButton.addEventListener("click", function () { window.print(); });
+      }
+    }());
+  </script>
+</body>
+</html>

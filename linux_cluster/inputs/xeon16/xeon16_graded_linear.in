@@ -1,0 +1,48 @@
+# Analytic left-to-right elastic and toughness gradient.
+width 1.0
+height 1.0
+notch_length 0.20
+nx 80
+ny 80
+
+material_mode linear_x
+young_modulus 210.0
+young_modulus_end 105.0
+poisson_ratio 0.30
+poisson_ratio_end 0.30
+fracture_toughness 2.7e-3
+fracture_toughness_end 1.8e-3
+length_scale 0.040
+length_scale_end 0.040
+
+mechanical_bc_scheme legacy_roller_pin
+max_displacement 1.0e-2
+max_sliding_displacement 0.0
+load_steps 20
+
+max_newton_iterations 30
+max_staggered_iterations 120
+staggered_tolerance 1.0e-5
+staggered_mechanical_tolerance 1.0e-6
+phase_kkt_tolerance 1.0e-8
+max_load_cutbacks 10
+load_cutback_factor 0.5
+
+output_directory results/xeon16_graded_linear
+write_every 5
+write_xdmf false
+write_material_fields false
+make_plots false
+strict_mesh_resolution true
+verbose true
+
+displacement_snes_type newtonls
+displacement_ksp_type gmres
+displacement_pc_type gamg
+phase_snes_type vinewtonrsls
+phase_ksp_type cg
+phase_pc_type gamg
+ksp_relative_tolerance 1.0e-10
+ksp_absolute_tolerance 1.0e-14
+ksp_max_iterations 1000
+petsc_monitor false

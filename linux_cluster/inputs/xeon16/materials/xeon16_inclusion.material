@@ -1,0 +1,10 @@
+# Background gradient with a higher-priority circular inclusion.
+profile young_modulus linear_x 210.0 168.0
+profile poisson_ratio constant 0.30
+profile fracture_toughness constant 2.7e-3
+profile length_scale constant 0.040
+
+region stiff_tough_inclusion circle 0.65 0.50 0.12 20
+override stiff_tough_inclusion young_modulus 315.0
+override stiff_tough_inclusion poisson_ratio 0.28
+override stiff_tough_inclusion fracture_toughness 3.2e-3

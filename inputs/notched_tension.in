@@ -1,0 +1,58 @@
+# Corrected AT2 single-edge-notched tension example
+# Syntax: one SimulationConfig keyword and one value per nonempty line.
+
+# Geometry and structured triangular mesh [mm]
+width 1.0
+height 1.0
+notch_length 0.20
+nx 20
+ny 20
+
+# Elastic and fracture data in the kN-mm unit system.  Uniform mode uses the
+# start values everywhere; the matching end values make that choice explicit.
+young_modulus 210.0          # kN/mm^2
+poisson_ratio 0.30
+fracture_toughness 2.7e-3    # kN/mm
+length_scale 0.150           # mm; deliberately enlarged for this short example
+young_modulus_end 210.0
+poisson_ratio_end 0.30
+fracture_toughness_end 2.7e-3
+length_scale_end 0.150
+material_mode uniform
+material_file none
+residual_stiffness 1.0e-8
+plane_stress false           # false selects plane strain
+
+# Displacement-controlled load [mm].  Legacy roller-and-pin loading is mode I
+# only, so its sliding displacement remains zero.
+mechanical_bc_scheme legacy_roller_pin
+max_displacement 5.0e-4
+max_sliding_displacement 0.0
+load_steps 3
+
+# Newton and staggered solution controls
+max_newton_iterations 25
+newton_relative_tolerance 1.0e-8
+newton_absolute_tolerance 1.0e-10
+newton_increment_tolerance 1.0e-10
+max_staggered_iterations 50
+staggered_tolerance 1.0e-5
+staggered_mechanical_tolerance 1.0e-6
+phase_kkt_tolerance 1.0e-8
+phase_optimizer_max_iterations 200
+spectral_smoothing 1.0e-10
+
+# Transactional load cutback and recovery
+max_load_cutbacks 8
+load_cutback_factor 0.5
+load_growth_patience 3
+load_growth_iteration_threshold 10
+
+# Output and safeguards
+output_directory "results/input example"
+write_every 1
+write_xdmf true
+write_material_fields true
+make_plots true
+strict_mesh_resolution true
+verbose true

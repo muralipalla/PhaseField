@@ -1,0 +1,29 @@
+# Smooth left-to-right grading.  Each material parameter is interpolated from
+# its ordinary value at x=0 to its *_end value at x=width.
+
+width 1.0
+height 1.0
+notch_length 0.20
+nx 20
+ny 20
+
+material_mode linear_x
+young_modulus 210.0
+young_modulus_end 105.0
+poisson_ratio 0.30
+poisson_ratio_end 0.30
+fracture_toughness 2.7e-3
+fracture_toughness_end 1.8e-3
+length_scale 0.150
+length_scale_end 0.150
+
+mechanical_bc_scheme legacy_roller_pin
+max_displacement 5.0e-4
+max_sliding_displacement 0.0
+load_steps 3
+
+output_directory results/graded_linear_x
+write_xdmf true
+write_material_fields true
+make_plots true
+strict_mesh_resolution true

@@ -1,0 +1,75 @@
+# Python caches, coverage, and packages
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.egg-info/
+build/
+dist/
+
+# Conda environments and local tool runtimes
+.fenicsx-env/
+.micromamba-root/
+.conda/
+.venv/
+venv/
+env/
+.tools/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+
+# Simulation outputs (retain the two curated documentation figures)
+results/*
+!results/demo/
+results/demo/*
+!results/demo/load_displacement.png
+!results/demo/final_phase_field.png
+
+# Temporary and exploratory work
+tmp/
+
+# Generated field/output formats
+*.h5
+*.hdf5
+*.xdmf
+*.pvd
+*.vtu
+*.pvtu
+*.bp
+*.bp4
+
+# Retain the reviewed PDF while ignoring other generated output artifacts
+output/*
+!output/pdf/
+output/pdf/*
+!output/pdf/PHASEFIELD_ALGORITHM_ACCEPTANCE_AND_CORRECTIONS.pdf
+
+# Logs and LaTeX intermediates
+*.log
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.out
+*.synctex.gz
+*.toc
+
+# Scheduler output
+slurm-*.out
+*.o[0-9]*
+*.e[0-9]*
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

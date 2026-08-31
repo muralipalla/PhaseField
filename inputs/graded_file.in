@@ -1,0 +1,23 @@
+# File-defined matrix with a stiffer circular inclusion.  material_file is
+# resolved relative to this input file, not relative to the launch directory.
+
+width 1.0
+height 1.0
+notch_length 0.20
+nx 20
+ny 20
+
+material_mode file
+material_file materials/inclusion.material
+length_scale 0.150
+
+mechanical_bc_scheme relative_clamped
+max_displacement 5.0e-4
+max_sliding_displacement 1.5e-4
+load_steps 3
+
+output_directory results/graded_file
+write_xdmf true
+write_material_fields true
+make_plots true
+strict_mesh_resolution true

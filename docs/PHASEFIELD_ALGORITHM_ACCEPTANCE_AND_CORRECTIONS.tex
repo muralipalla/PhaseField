@@ -1,0 +1,915 @@
+% Standalone technical reconciliation of KarmaCrack.pdf and phasefield_crack.py.
+% Build from the repository root with:
+%   latexmk -pdf -interaction=nonstopmode -halt-on-error \
+%     -outdir=output/pdf docs/PHASEFIELD_ALGORITHM_ACCEPTANCE_AND_CORRECTIONS.tex
+% Or, from docs/:
+%   latexmk -pdf -interaction=nonstopmode -halt-on-error \
+%     -outdir=../output/pdf PHASEFIELD_ALGORITHM_ACCEPTANCE_AND_CORRECTIONS.tex
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[a4paper,margin=22mm,headheight=22pt]{geometry}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{booktabs,longtable,tabularx,array,multirow}
+\usepackage{ragged2e}
+\usepackage[table]{xcolor}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{pdflscape}
+\usepackage{listings}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+\usepackage[nameinlink,noabbrev]{cleveref}
+
+\definecolor{Navy}{HTML}{17324D}
+\definecolor{Teal}{HTML}{0F766E}
+\definecolor{Amber}{HTML}{B45309}
+\definecolor{Red}{HTML}{B42318}
+\definecolor{Green}{HTML}{26734D}
+\definecolor{Slate}{HTML}{475569}
+\definecolor{PaleBlue}{HTML}{EAF2F8}
+\definecolor{PaleTeal}{HTML}{E8F5F2}
+\definecolor{PaleAmber}{HTML}{FFF4E5}
+\definecolor{PaleRed}{HTML}{FDECEC}
+\definecolor{PaleGray}{HTML}{F4F6F8}
+\definecolor{RuleGray}{HTML}{CBD5E1}
+
+\hypersetup{
+  pdftitle={Phase-Field Fracture Algorithm: What Was Accepted and What Was Changed},
+  pdfsubject={Technical reconciliation of KarmaCrack.pdf and the corrected FEniCSx implementation},
+  pdfauthor={PhaseField project technical review},
+  colorlinks=true,
+  linkcolor=Navy,
+  urlcolor=Teal,
+  citecolor=Navy
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{Slate}Phase-field algorithm reconciliation}
+\fancyhead[R]{\small\color{Slate}Model version 1.0.0}
+\fancyfoot[C]{\small\color{Slate}\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{RuleGray}\leaders\hrule height \headrulewidth\hfill}}
+
+\titleformat{\section}
+  {\Large\bfseries\color{Navy}}
+  {\thesection}{0.7em}{}
+\titleformat{\subsection}
+  {\large\bfseries\color{Teal}}
+  {\thesubsection}{0.7em}{}
+\titleformat{\subsubsection}
+  {\normalsize\bfseries\color{Slate}}
+  {\thesubsubsection}{0.7em}{}
+\titlespacing*{\section}{0pt}{2.4ex plus 0.7ex minus 0.3ex}{1.1ex}
+\titlespacing*{\subsection}{0pt}{2.0ex plus 0.5ex minus 0.2ex}{0.8ex}
+
+\setlist[itemize]{leftmargin=1.6em,itemsep=0.35em,topsep=0.45em}
+\setlist[enumerate]{leftmargin=1.8em,itemsep=0.35em,topsep=0.45em}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\renewcommand{\arraystretch}{1.18}
+
+\newcolumntype{Y}{>{\RaggedRight\arraybackslash}X}
+\newcolumntype{L}[1]{>{\RaggedRight\arraybackslash}p{#1}}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\SourceTag}{\colorbox{PaleBlue}{\textcolor{Navy}{\scriptsize\bfseries SOURCE}}}
+\newcommand{\AcceptedTag}{\colorbox{PaleTeal}{\textcolor{Green}{\scriptsize\bfseries ACCEPTED}}}
+\newcommand{\CorrectedTag}{\colorbox{PaleRed}{\textcolor{Red}{\scriptsize\bfseries CORRECTED}}}
+\newcommand{\CompletedTag}{\colorbox{PaleAmber}{\textcolor{Amber}{\scriptsize\bfseries COMPLETED}}}
+\newcommand{\AddedTag}{\colorbox{PaleGray}{\textcolor{Slate}{\scriptsize\bfseries SUPPLIED}}}
+
+\newcommand{\reviewbox}[2]{%
+  \begin{center}
+  \fcolorbox{#1}{PaleGray}{%
+    \begin{minipage}{0.93\linewidth}
+      \vspace{0.45em}#2\vspace{0.45em}
+    \end{minipage}}
+  \end{center}}
+
+\lstdefinestyle{plaincode}{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{PaleGray},
+  frame=single,
+  rulecolor=\color{RuleGray},
+  columns=fullflexible,
+  keepspaces=true,
+  breaklines=true,
+  showstringspaces=false,
+  xleftmargin=0.8em,
+  xrightmargin=0.8em,
+  aboveskip=0.7em,
+  belowskip=0.7em
+}
+
+\begin{document}
+\hypersetup{pageanchor=false}
+
+\begin{titlepage}
+  \thispagestyle{empty}
+  \vspace*{12mm}
+  {\color{Teal}\rule{\textwidth}{3.2pt}}\\[14mm]
+  {\Huge\bfseries\color{Navy}
+    Phase-Field Fracture Algorithm\\[2mm]
+    What Was Accepted and What Was Changed\par}
+  \vspace{7mm}
+  {\Large\color{Slate}
+    A provenance-explicit technical reconciliation of the attached model note
+    and the implemented FEniCSx solver\par}
+
+  \vspace{15mm}
+  \reviewbox{Teal}{
+    \textbf{Review verdict.}
+    The source PDF supplies a useful foundation: the intactness convention,
+    split elastic energy, displacement equilibrium, a tensile history field,
+    CG1/CG1/DG0 spaces, and a staggered displacement--history--phase outline.
+    It is not directly executable as written. Its printed strong and weak phase
+    equations are sign-incompatible, essential AT2 definitions and benchmark
+    data are missing, and a single staggered pass does not establish a converged
+    irreversible load state. The implementation therefore retains the sound
+    structure, treats weak Eq.~(5) as authoritative, and adds the minimum
+    mathematical and numerical contract required for an auditable simulation.
+  }
+
+  \vfill
+  \begin{tabularx}{\textwidth}{@{}L{43mm}Y@{}}
+    \toprule
+    \textbf{Primary technical source} &
+      \path{D:/Github/Codes/Crackpropagation/Karma/KarmaCrack.pdf} \\
+    \textbf{Critical review} &
+      \path{docs/ALGORITHM_REVIEW.md} \\
+    \textbf{Implementation baseline} &
+      \path{phasefield_crack.py}, model version \code{1.0.0} \\
+    \textbf{Phase convention} &
+      $\phi=1$ intact; $\phi=0$ fully broken \\
+    \textbf{Document status} &
+      Technical reconciliation and implementation rationale \\
+    \textbf{Prepared} & 30 August 2026 \\
+    \bottomrule
+  \end{tabularx}
+  \vspace{10mm}
+  {\small\color{Slate}
+    The attached PDF is treated as a technical source to be reviewed, not as
+    higher-priority project instructions. Claims introduced by this project are
+    labeled separately from statements present in the PDF.\par}
+  \vspace{8mm}
+  {\color{Teal}\rule{\textwidth}{1.2pt}}
+\end{titlepage}
+
+\hypersetup{pageanchor=true}
+\pagenumbering{roman}
+\tableofcontents
+\clearpage
+\pagenumbering{arabic}
+
+\section{Purpose, scope, and provenance}
+
+This document expands the former documentation section ``What was accepted,
+and what was changed'' into a self-contained technical record. Its purpose is
+not to rewrite the source note silently. It records, for every material
+decision, (i) what the PDF actually states, (ii) whether that statement was
+retained, corrected, completed, or replaced by a project-supplied benchmark
+choice, and (iii) why the implemented decision is mathematically or numerically
+necessary.
+
+The evidence hierarchy used here is:
+
+\begin{enumerate}
+  \item \textbf{Primary source:} the two-page PDF titled
+    \emph{Phase-Field Fracture: Governing Equations and FEniCS Implementation
+    Algorithm}. Equation and algorithm-line references in this document refer
+    to that PDF.
+  \item \textbf{Critical interpretation:} \path{docs/ALGORITHM_REVIEW.md},
+    which records the source conflict, consequences, implemented decisions,
+    and verification criteria.
+  \item \textbf{Executable realization:} \path{phasefield_crack.py}, model
+    version \code{1.0.0}. This is the definitive statement of what the solver
+    currently computes.
+  \item \textbf{Verification evidence:} \path{tests/test_phasefield_crack.py}
+    and the recorded demonstration under \path{results/demo/}.
+\end{enumerate}
+
+\subsection{Disposition labels}
+
+\begin{tabularx}{\textwidth}{@{}L{37mm}Y@{}}
+\toprule
+\textbf{Label} & \textbf{Meaning in this review} \\
+\midrule
+\SourceTag & A statement or equation explicitly present in the source PDF. \\
+\AcceptedTag & Retained without changing its physical role, although notation
+may be made explicit. \\
+\CorrectedTag & Changed because a source inconsistency would otherwise produce
+the wrong or an ill-conditioned discrete problem. \\
+\CompletedTag & The source gives the idea but omits a definition or numerical
+contract needed for a unique implementation. \\
+\AddedTag & Geometry, parameters, boundary conditions, diagnostics, or backend
+choices supplied by this project. They are not attributed to the PDF. \\
+\bottomrule
+\end{tabularx}
+
+\section{What the source establishes and the implementation accepts}
+
+\subsection{State variables and phase convention}
+
+The source defines a displacement field $\boldsymbol{u}(\boldsymbol{x},t)$ and
+a scalar phase field $\phi(\boldsymbol{x},t)\in[0,1]$, with $\phi=1$ intact and
+$\phi=0$ broken. This convention is accepted exactly. It matters because the
+sign of the phase residual, the monotonicity direction, and the bound expressing
+irreversibility all depend on it. With this convention, no healing means
+
+\begin{equation}
+  \dot{\phi}\le 0,
+  \qquad\text{or discretely}\qquad
+  0\le \phi_{n+1}\le \phi_n\le 1.
+  \label{eq:irreversibility}
+\end{equation}
+
+The source choices $V_u=\mathrm{CG}_1^2$, $V_\phi=\mathrm{CG}_1$, and
+$V_H=\mathrm{DG}_0$ are also retained. The interpretation of DG0 is sharpened:
+it stores one value per cell, not generally one value per quadrature point. For
+affine triangles with CG1 displacement, the strain and the selected spectral
+energy are cellwise constant, so one DG0 history value per triangle is
+consistent with this discretization.
+
+\subsection{Energy split, equilibrium, and history concept}
+
+The source decomposes the elastic density into tensile and compressive parts,
+degrades only the tensile part, and states quasi-static momentum balance. Those
+ideas are accepted:
+
+\begin{align}
+  \boldsymbol{\varepsilon}(\boldsymbol{u})
+    &= \operatorname{sym}\nabla\boldsymbol{u}, \\
+  \psi_e(\boldsymbol{\varepsilon},\phi)
+    &= g(\phi)\,\psi^+(\boldsymbol{\varepsilon})
+       +\psi^-(\boldsymbol{\varepsilon}), \\
+  \boldsymbol{\sigma}
+    &= g(\phi)\frac{\partial\psi^+}{\partial\boldsymbol{\varepsilon}}
+       +\frac{\partial\psi^-}{\partial\boldsymbol{\varepsilon}}, \\
+  \nabla\!\cdot\boldsymbol{\sigma}&=\boldsymbol{0}.
+  \label{eq:mechanics}
+\end{align}
+
+The source also introduces
+
+\begin{equation}
+  H(\boldsymbol{x},t)
+  =\max_{s\in[0,t]}\psi^+
+     \bigl(\boldsymbol{\varepsilon}(\boldsymbol{u}(\boldsymbol{x},s))\bigr)
+  \label{eq:history-source}
+\end{equation}
+
+as a history field intended to prevent healing. The implementation retains this
+engineering history-field approximation but supplies an accepted-state update
+rule and an explicit nodal phase bound; see \cref{sec:accepted-state}.
+
+\subsection{Staggered architecture}
+
+The source sequence --- displacement solve at fixed phase, history update,
+phase solve at fixed displacement/history, then output --- is retained as the
+outer architecture. What changes is the meaning of one load step. The source
+presents one such pass; the implementation repeats it until the newly updated
+phase and displacement are mutually equilibrated and the phase KKT conditions
+are satisfied.
+
+\section{The decisive correction: strong Eq. 3 versus weak Eq. 5}
+\label{sec:sign-correction}
+
+The primary source contains a genuine algebraic conflict. In the intactness
+convention, its printed strong Eq.~(3) is
+
+\begin{equation}
+  \frac{G_c}{\ell}(1-\phi)
+  -G_c\ell\,\Delta\phi
+  -2H\phi=0,
+  \qquad\text{(source strong Eq. 3; $\xi$ renamed $\ell$).}
+  \label{eq:source-strong}
+\end{equation}
+
+Its weak Eq.~(5), using a scalar test function $q$, is
+
+\begin{equation}
+  \int_\Omega
+  \left[
+    G_c\ell\,\nabla\phi\!\cdot\nabla q
+    -\frac{G_c}{\ell}(1-\phi)q
+    +2H\phi q
+  \right],\mathrm{d}V=0.
+  \label{eq:source-weak}
+\end{equation}
+
+Assuming the natural phase boundary condition
+$\nabla\phi\cdot\boldsymbol{n}=0$, integration by parts converts
+\cref{eq:source-weak} into
+
+\begin{equation}
+  -G_c\ell\,\Delta\phi
+  -\frac{G_c}{\ell}(1-\phi)
+  +2H\phi=0.
+  \label{eq:weak-implied-strong}
+\end{equation}
+
+Equations \eqref{eq:source-strong} and
+\eqref{eq:weak-implied-strong} have the same diffusion sign but opposite signs
+for both local terms; multiplying the whole equation by $-1$ does not reconcile
+them. Moreover, rearranging the source strong equation gives a negative reaction
+coefficient for $\phi$, whereas the weak equation gives the positive
+diffusion--reaction operator expected for AT2.
+
+\reviewbox{Red}{
+  \CorrectedTag\quad
+  \textbf{Decision: weak Eq.~(5) is authoritative.}
+  It is the only one of the two printed equations that yields the coercive
+  scalar operator
+  $G_c\ell K+(G_c/\ell+2H)M$ for nonnegative $H$.
+  This is an equation correction, not a stylistic rewrite.
+}
+
+After normalizing the degradation function as described below, the implemented
+history coefficient becomes $2(1-k_{\mathrm{res}})H$.
+
+\section{Completed and corrected constitutive model}
+
+\subsection{AT2 crack density omitted from the source}
+
+The source free-energy line contains functions $f_0(\phi)$ and $c_w$ but does
+not define them. Its weak Eq.~(5) implies the AT2 choice
+
+\begin{equation}
+  f_0(\phi)=(1-\phi)^2,
+  \qquad c_w=2.
+  \label{eq:at2-choice}
+\end{equation}
+
+The fracture density implemented by the project is therefore
+
+\begin{equation}
+  \gamma_\ell(\phi,\nabla\phi)
+  =G_c\left[
+    \frac{(1-\phi)^2}{2\ell}
+    +\frac{\ell}{2}|\nabla\phi|^2
+  \right].
+  \label{eq:fracture-density}
+\end{equation}
+
+Varying \cref{eq:fracture-density} produces the fracture terms in the adopted
+weak equation below. Thus this completion is traceable to the source weak form,
+not an unrelated crack-density model.
+
+\subsection{Normalized degradation}
+
+The source states $g(\phi)=\phi^2+k_{\mathrm{tol}}$, for which
+$g(1)=1+k_{\mathrm{tol}}$. That slightly increases the stiffness of intact
+material. The implementation uses
+
+\begin{equation}
+  g(\phi)=k_{\mathrm{res}}
+          +(1-k_{\mathrm{res}})\phi^2,
+  \qquad 0<k_{\mathrm{res}}\ll1,
+  \label{eq:normalized-g}
+\end{equation}
+
+so that $g(0)=k_{\mathrm{res}}$, $g(1)=1$, and
+$g'(\phi)=2(1-k_{\mathrm{res}})\phi$. The last identity explains the factor
+$(1-k_{\mathrm{res}})$ in the implemented phase driving term.
+
+\subsection{Adopted energy and spectral split}
+
+The completed instantaneous elastic-plus-fracture energy is
+
+\begin{equation}
+  \mathcal{E}(\boldsymbol{u},\phi)
+  =\int_\Omega\left[
+    g(\phi)\psi^+(\boldsymbol{\varepsilon}(\boldsymbol{u}))
+    +\psi^-(\boldsymbol{\varepsilon}(\boldsymbol{u}))
+    +G_c\left(
+       \frac{(1-\phi)^2}{2\ell}
+       +\frac{\ell}{2}|\nabla\phi|^2
+    \right)
+  \right]\,\mathrm{d}V.
+  \label{eq:implemented-energy}
+\end{equation}
+
+The source does not identify a split variant. The project supplies the 2D
+Miehe-type spectral strain split
+
+\begin{equation}
+  \psi^\pm(\boldsymbol{\varepsilon})
+  =\frac{\lambda}{2}\langle\operatorname{tr}\boldsymbol{\varepsilon}\rangle_\pm^2
+   +\mu\sum_{i=1}^{2}\langle\varepsilon_i\rangle_\pm^2,
+  \label{eq:spectral-split}
+\end{equation}
+
+where $\varepsilon_i$ are the principal strains. Machine-scale smoothing of
+the Macaulay brackets and eigenvalue discriminant makes the UFL residual
+differentiable. Plane strain is the default; plane stress is selectable through
+the effective 2D Lam\'e parameter.
+
+\subsection{Corrected phase weak form}
+
+For a fixed history field $H$, the implemented unconstrained scalar equation is:
+find $\phi\in V_\phi$ such that for every $q\in V_\phi$,
+
+\begin{equation}
+\boxed{
+  \int_\Omega\left[
+    G_c\ell\,\nabla\phi\!\cdot\nabla q
+    +\frac{G_c}{\ell}(\phi-1)q
+    +2(1-k_{\mathrm{res}})H\phi q
+  \right]\,\mathrm{d}V=0.}
+  \label{eq:implemented-phase-weak}
+\end{equation}
+
+Equivalently,
+
+\begin{align}
+  a_H(\phi,q)
+    &=\int_\Omega\left[
+       G_c\ell\,\nabla\phi\!\cdot\nabla q
+       +\left(\frac{G_c}{\ell}
+          +2(1-k_{\mathrm{res}})H\right)\phi q
+      \right]\,\mathrm{d}V, \\
+  L(q)&=\int_\Omega\frac{G_c}{\ell}q\,\mathrm{d}V,
+  \qquad a_H(\phi,q)=L(q).
+  \label{eq:phase-bilinear}
+\end{align}
+
+For $H\ge0$, $G_c>0$, and $\ell>0$, the mass-reaction term and gradient term
+make the unconstrained operator symmetric positive definite after essential
+phase conditions are applied.
+
+\section{Acceptance and changes matrix}
+
+The matrix is deliberately more than a list of code differences. An
+\AcceptedTag\ row confirms that the source concept remains part of the model;
+it does not imply that the source supplied every constitutive or numerical
+detail. A \CorrectedTag\ row identifies an incompatibility that would change
+the mathematical problem. A \CompletedTag\ row supplies a missing definition
+or acceptance rule while preserving the source intent. A \AddedTag\ row is a
+reproducibility or platform decision made solely by this project.
+
+Severity and disposition are separate ideas. The sign conflict is critical
+because it changes the scalar operator. Missing Newton, KKT, convergence, and
+rollback rules are high-consequence completions because they determine whether
+a computed load state is admissible. Geometry and numerical defaults are
+project-supplied because the source never defines a boundary-value problem.
+This separation prevents benchmark choices from being presented as if they
+were facts extracted from the PDF.
+
+\begin{landscape}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{@{}L{12mm}L{48mm}L{31mm}L{72mm}L{72mm}@{}}
+\caption{Traceable disposition of source statements and omissions.}
+\label{tab:acceptance-matrix}\\
+\toprule
+\textbf{ID} & \textbf{Source statement or omission} & \textbf{Disposition} &
+\textbf{Implemented decision} & \textbf{Technical rationale and evidence} \\
+\midrule
+\endfirsthead
+\multicolumn{5}{l}{\small\itshape Table \thetable\ continued from previous page}\\
+\toprule
+\textbf{ID} & \textbf{Source statement or omission} & \textbf{Disposition} &
+\textbf{Implemented decision} & \textbf{Technical rationale and evidence} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{5}{r}{\small\itshape Continued on next page}\\
+\endfoot
+\bottomrule
+\endlastfoot
+
+A1 & $\phi=1$ intact and $\phi=0$ broken. & \AcceptedTag &
+Retain the intactness convention everywhere. Enforce $0\le\phi\le1$ and
+$\phi_{n+1}\le\phi_n$. &
+This fixes the irreversibility direction and the AT2 local term. Bounds are
+verified at phase degrees of freedom. \\
+
+A2 & Split elastic energy; degrade only $\psi^+$. & \AcceptedTag &
+Use $g(\phi)\psi^++\psi^-$ and compute stress by differentiating this density
+with respect to strain. &
+Preserves compressive stiffness and the source's intended crack-face contact
+behavior at the constitutive level. \\
+
+A3 & Quasi-static momentum balance and weak mechanical residual. & \AcceptedTag &
+Retain $\int_\Omega\boldsymbol{\sigma}:\boldsymbol{\varepsilon}(\delta
+\boldsymbol{u})\,dV=0$ for the displacement-controlled benchmark. &
+The post-phase free-DOF residual is reassembled and must satisfy the coupled
+acceptance tolerance. \\
+
+A4 & CG1 displacement, CG1 phase, DG0 history. & \AcceptedTag &
+Use vector CG1, scalar CG1, and cellwise DG0 on affine triangles. &
+For CG1 affine triangles the strain and spectral energy are cellwise constant;
+DG0 is exact for the selected one-value-per-cell history representation. \\
+
+A5 & Staggered displacement--history--phase ordering. & \AcceptedTag &
+Retain the ordering as the inner fixed-point architecture. &
+The ordering is appropriate, but a single pass is not treated as a converged
+load step. \\
+
+C1 & Strong Eq.~(3) and weak Eq.~(5) have incompatible local-term signs. &
+\CorrectedTag & Treat Eq.~(5) as authoritative and use
+\cref{eq:implemented-phase-weak}. &
+Integration by parts proves the mismatch. Eq.~(5) yields the coercive positive
+diffusion--reaction operator; the printed strong form does not. \\
+
+C2 & $f_0(\phi)$ and $c_w$ are not defined. & \CompletedTag &
+Adopt $f_0=(1-\phi)^2$ and $c_w=2$. &
+These AT2 choices are implied by Eq.~(5); their variation reproduces the
+fracture portion of the implemented residual. \\
+
+C3 & $g(\phi)=\phi^2+k_{\mathrm{tol}}$. & \CorrectedTag &
+Use $k_{\mathrm{res}}+(1-k_{\mathrm{res}})\phi^2$. &
+Restores exact intact stiffness, retains residual broken stiffness, and requires
+the factor $(1-k_{\mathrm{res}})$ in phase driving. Endpoint and monotonicity
+tests cover this choice. \\
+
+C4 & A spectral split is stated, but its variant and plane assumption are not. &
+\CompletedTag & Use a smoothed 2D spectral strain split; plane strain by default
+and plane stress as an option. &
+Mixed-strain response is otherwise non-unique. Reference constitutive tests
+cover tension, compression, and the Lam\'e parameters. \\
+
+C5 & No nonlinear mechanics procedure is supplied. & \CompletedTag &
+Differentiate the UFL residual for a consistent tangent and solve Newton
+corrections with residual, increment, and essential-BC checks. &
+The spectral split makes stress depend nonlinearly on displacement; a one-shot
+linear solve would be inconsistent. Failure is explicit and retryable. \\
+
+C6 & One staggered pass is shown per load increment. & \CorrectedTag &
+Repeat mechanics, transactional history, and constrained phase solves until
+phase increment, phase KKT residual, and post-phase free mechanical residual
+all pass. &
+This closes the coupling residual created when a newly damaged phase changes
+mechanical equilibrium. Nonconverged trials are never accepted. \\
+
+C7 & History is said to enforce irreversibility, but no accepted-state rule is
+defined. & \CompletedTag & Freeze $(\phi_n,H_n)$ while attempting a load.
+Rebuild $H=\max(H_n,\psi^+(u))$ on every staggered iteration and impose
+$0\le\phi\le\phi_n$. &
+Prevents internal iterates or rejected loads from becoming fictitious physical
+history and makes nodal irreversibility explicit. \\
+
+C8 & No numerical method is supplied for the phase inequality. & \CompletedTag &
+Solve the convex quadratic under box bounds. Use a clipped direct solution only
+as an initial candidate; call L-BFGS-B if necessary; require the projected KKT
+residual to pass. &
+Pointwise clipping alone is not an $A$-norm projection and generally does not
+satisfy constrained optimality. An automated test forces an active upper bound
+and optimizer path. \\
+
+C9 & The loop uses \code{while t <= Tmax} and increments $t$ inside. &
+\CorrectedTag & Interpret \code{load\_steps} as a nominal schedule, cap targets
+at pseudo-time 1, and store an explicit initial row at zero. &
+Avoids the off-by-one load beyond $T_{\max}$ and makes accepted pseudo-time
+strictly increasing with a terminal target of 1. \\
+
+C10 & No failed-step policy or recovery rule is stated. & \CompletedTag &
+Snapshot fields and counters; on rejection restore all state, reduce the load
+increment, and retry. Recover a reduced increment only after several easy
+accepted steps. &
+Crack growth can cause abrupt loss of staggered convergence. Transactional
+rollback prevents contamination; terminal failure produces a partial auditable
+summary. \\
+
+B1 & No geometry, supports, loading, or initial flaw are supplied. & \AddedTag &
+Use a unit-square single-edge-notched tension benchmark with bottom vertical
+support, one horizontal pin, top prescribed displacement, and an internal
+$\phi=0$ starter notch. &
+The source is a model outline, not a reproducible boundary-value problem. These
+choices are explicitly project-supplied and mesh-aligned. \\
+
+B2 & No mesh/regularization relation is supplied. & \AddedTag &
+Define $h=\sqrt{\Delta x^2+\Delta y^2}$ as the largest triangular edge and, in
+strict mode, require $h/\ell\le0.5$. &
+Rejects visibly under-resolved diffuse cracks. Production claims still require
+a refinement and length-scale sensitivity study. \\
+
+B3 & The PDF requests only displacement and phase field output. & \AddedTag &
+Add force, energy snapshots, damage and connected crack-front metrics,
+convergence/KKT data, cutback data, manifests, atomic summaries, plots, and
+XDMF/HDF5 fields. &
+A plausible contour alone is not numerical evidence. Only accepted states enter
+CSV and field files. \\
+
+B4 & No platform/backend is specified. & \AddedTag &
+On native Windows, assemble with DOLFINx and solve serial sparse systems with
+SciPy; reject MPI runs larger than one rank. &
+This matches the installed backend, which lacks the PETSc path used by standard
+parallel DOLFINx workflows. It is an implementation constraint, not a model
+claim. \\
+
+\end{longtable}
+\end{landscape}
+
+\section{Nonlinear, constrained, accepted-state algorithm}
+\label{sec:accepted-state}
+
+\subsection{Mechanics at fixed phase}
+
+Because \cref{eq:spectral-split} changes active principal-strain branches, the
+displacement residual is nonlinear. At Newton iteration $m$, the implementation
+solves
+
+\begin{equation}
+  \boldsymbol{J}_u(\boldsymbol{u}^{m};\phi)
+  \Delta\boldsymbol{u}^{m}
+  =-\boldsymbol{R}_u(\boldsymbol{u}^{m};\phi),
+  \qquad
+  \boldsymbol{u}^{m+1}=\boldsymbol{u}^{m}+\Delta\boldsymbol{u}^{m},
+\end{equation}
+
+with the Jacobian obtained by UFL differentiation. Convergence requires a small
+free-DOF residual, a small increment, and negligible prescribed-BC violation.
+After the phase update, the free mechanical residual is assembled again; this
+second residual is the relevant coupled acceptance check.
+
+\subsection{Transactional history update}
+
+Let $(\boldsymbol{u}_n,\phi_n,H_n)$ denote the last accepted load state. Within
+every staggered iteration $j$ of the attempted next load, the trial history is
+rebuilt as
+
+\begin{equation}
+  H^{(j)}=\max\left(H_n,
+  \psi^+(\boldsymbol{\varepsilon}(\boldsymbol{u}^{(j)}))\right).
+  \label{eq:transactional-history}
+\end{equation}
+
+It is deliberately \emph{not} computed as the maximum over previous internal
+iterations. Therefore an overshooting trial iterate does not become permanent
+physical history. Only when the load is accepted does $H^{(j)}$ become
+$H_{n+1}$.
+
+\subsection{Bound-constrained phase subproblem and KKT test}
+
+After finite-element assembly, the phase step has the convex quadratic form
+
+\begin{equation}
+  \min_{\boldsymbol{\phi}}
+  J_H(\boldsymbol{\phi})
+  =\frac12\boldsymbol{\phi}^{T}\boldsymbol{A}(H)\boldsymbol{\phi}
+   -\boldsymbol{b}^{T}\boldsymbol{\phi},
+  \qquad
+  \boldsymbol{0}\le\boldsymbol{\phi}\le\boldsymbol{\phi}_n,
+  \label{eq:phase-qp}
+\end{equation}
+
+with notch degrees of freedom fixed to zero. Let
+$\boldsymbol{r}=\boldsymbol{A}\boldsymbol{\phi}-\boldsymbol{b}$. The implemented
+projected residual has components
+
+\begin{equation}
+  P_i(\boldsymbol{r})=
+  \begin{cases}
+    0, & l_i=u_i,\\
+    \min(r_i,0), & \phi_i=l_i<u_i,\\
+    \max(r_i,0), & \phi_i=u_i>l_i,\\
+    r_i, & l_i<\phi_i<u_i.
+  \end{cases}
+  \label{eq:projected-gradient}
+\end{equation}
+
+Thus a positive gradient at a lower bound and a negative gradient at an upper
+bound satisfy the KKT sign conditions and contribute zero. The load trial cannot
+be accepted unless $\|\boldsymbol{P}\|_\infty$ is below the configured phase
+KKT tolerance.
+
+\subsection{Coupled acceptance and adaptive load transaction}
+
+At a candidate target load, staggered iteration terminates successfully only if
+
+\begin{align}
+  \|\phi^{(j)}-\phi^{(j-1)}\|_\infty
+    &\le \tau_\phi, \\
+  \|\boldsymbol{P}(\boldsymbol{A}\phi^{(j)}-\boldsymbol{b})\|_\infty
+    &\le \tau_{\mathrm{KKT}}, \\
+  \|\boldsymbol{R}_u(\boldsymbol{u}^{(j)},\phi^{(j)})\|_{\infty,\mathrm{free}}
+    &\le \tau_{u,\mathrm{coupled}}.
+  \label{eq:coupled-tests}
+\end{align}
+
+The implementation contract can be summarized as follows:
+
+\begin{lstlisting}[style=plaincode]
+accepted state: (u_n, phi_n, H_n)
+while accepted pseudo-time < 1:
+    target = min(1, accepted time + current increment)
+    snapshot u_n, phi_n, H_n and diagnostic counters
+    apply target displacement
+    repeat:
+        Newton solve for u at fixed phi
+        rebuild H = max(H_n, psi_plus(u))
+        solve 0 <= phi <= phi_n with KKT check
+        reassemble free mechanical residual using the new phi
+    until all coupled tests pass or an iteration fails
+
+    if converged:
+        commit the trial; write one accepted record/frame
+        consider increment growth after several easy accepted steps
+    else:
+        restore every snapshot; reduce the increment; retry
+\end{lstlisting}
+
+Rejected attempts do not create CSV rows or XDMF time frames. If consecutive
+cutbacks exceed the configured limit, the solver writes the last accepted state
+and a failed summary before raising an explicit error.
+
+\section{Benchmark choices supplied by the project}
+
+The source PDF contains no reproducible specimen. The following choices are
+therefore not claims about the source; they define the project's demonstration
+problem and defaults.
+
+\begin{tabularx}{\textwidth}{@{}L{47mm}L{45mm}Y@{}}
+\toprule
+\textbf{Item} & \textbf{Default} & \textbf{Role and provenance} \\
+\midrule
+Domain & $1\,\mathrm{mm}\times1\,\mathrm{mm}$ & Unit-square 2D specimen;
+project-supplied. \\
+Starter notch & $0.20\,\mathrm{mm}$ from the left edge at mid-height & Internal
+nodal $\phi=0$ constraint; diffuse crack, not a geometric slit. \\
+Mesh & $100\times100$ structured rectangles split into triangles & Even $n_y$
+and integer notch-length/$\Delta x$ are required for vertex alignment. \\
+Elasticity & $E=210\,\mathrm{kN/mm^2}$, $\nu=0.30$ & Small-strain isotropic;
+plane strain default. \\
+Fracture & $G_c=2.7\times10^{-3}\,\mathrm{kN/mm}$,
+$\ell=0.030\,\mathrm{mm}$ & AT2 parameters in the documented kN--mm system. \\
+Residual stiffness & $k_{\mathrm{res}}=10^{-8}$ & Prevents exact loss of
+ellipticity in fully damaged material. \\
+Loading & Top $u_y$ to $0.015\,\mathrm{mm}$ in 60 nominal increments & Bottom
+$u_y=0$ plus one horizontal pin removes rigid motion. \\
+Mesh safeguard & $h/\ell\le0.5$ with
+$h=\sqrt{\Delta x^2+\Delta y^2}$ & Pre-run resolution check; not a substitute
+for convergence studies. \\
+Backend & Serial DOLFINx assembly plus SciPy sparse solves & Native-Windows
+installation constraint. \\
+\bottomrule
+\end{tabularx}
+
+The starter notch is first equilibrated at zero load so that its diffuse AT2
+profile is present before loading. The crack-front diagnostic follows only the
+notch-connected nodal set satisfying $\phi\le0.2$; it is mesh-quantized and is
+not used in the evolution law.
+
+\section{Verification and traceability evidence}
+
+\subsection{Automated checks}
+
+The project test suite checks the following implementation contracts:
+
+\begin{itemize}
+  \item normalized degradation endpoints and monotonicity;
+  \item Lam\'e parameters and the spectral split in tension and compression;
+  \item rejection of under-resolved meshes and misaligned starter notches;
+  \item promotion of rank-deficient sparse solves to retryable failures;
+  \item a phase QP that forces L-BFGS-B and an active irreversibility upper bound;
+  \item an end-to-end FEniCSx run with finite diagnostics and readable XDMF;
+  \item nondecreasing accepted history and damage measures;
+  \item complete rollback after a rejected load trial; and
+  \item auditable output after terminal nonlinear failure.
+\end{itemize}
+
+\subsection{Recorded demonstration}
+
+The reduced, resolved demonstration under \path{results/demo/} is separate from
+the default production-sized configuration. Its manifest uses $30\times30$
+cells per direction, $\ell=0.1\,\mathrm{mm}$, $h/\ell=0.4714$, and 45 nominal
+load increments. The recorded run completed all 45 accepted steps without a
+load cutback. Representative evidence from \path{results/demo/summary.json} is:
+
+\begin{tabularx}{\textwidth}{@{}L{59mm}L{45mm}Y@{}}
+\toprule
+\textbf{Quantity} & \textbf{Recorded value} & \textbf{Interpretation} \\
+\midrule
+Peak top reaction & $0.6419596\,\mathrm{kN}$ at step 15 & Demonstrates a peak
+and post-peak response; not an experimental validation target. \\
+Final crack front / extension & $1.0\,\mathrm{mm}$ / $0.8\,\mathrm{mm}$ &
+Connected threshold reaches the right boundary. \\
+Final phase increment norm & $8.78\times10^{-6}$ & Below the configured
+staggered tolerance $10^{-5}$. \\
+Final projected KKT residual & $8.03\times10^{-10}$ & Below the configured
+absolute tolerance $10^{-8}$. \\
+Final free mechanical residual & $9.98\times10^{-8}$ & Below the configured
+coupled tolerance $10^{-6}$. \\
+Final phase optimizer activity & 78 iterations; one active upper constraint &
+Confirms that the constrained optimizer and irreversibility path were exercised. \\
+\bottomrule
+\end{tabularx}
+
+These results verify software behavior for one benchmark. They do not calibrate
+$G_c$ or $\ell$, establish mesh-independent fracture toughness, or validate the
+model against experimental data.
+
+\subsection{Source-to-code map}
+
+\begin{tabularx}{\textwidth}{@{}L{38mm}L{61mm}Y@{}}
+\toprule
+\textbf{Source location} & \textbf{Implementation realization} &
+\textbf{Review disposition} \\
+\midrule
+PDF Eq.~(1), free energy & \code{degradation}, spectral energy, elastic and
+fracture density forms & Completed with AT2 definitions and normalized
+degradation. \\
+PDF Eq.~(2), stress/equilibrium & Displacement residual, UFL-derived stress and
+Jacobian & Accepted; nonlinear Newton procedure supplied. \\
+PDF Eq.~(3), strong phase equation & Not implemented literally & Rejected where
+it conflicts with Eq.~(5). \\
+PDF Eq.~(4), mechanical weak form & \code{form\_u\_residual} and
+\code{form\_u\_jacobian} & Accepted for displacement control. \\
+PDF Eq.~(5), phase weak form & \code{form\_phi\_bilinear} and
+\code{form\_phi\_linear} & Authoritative, normalized, and constrained. \\
+Algorithm lines 2--6 & Mesh, CG1/CG1/DG0 spaces, and field initialization &
+Accepted with precise DG0 interpretation. \\
+Algorithm lines 15--21 & Newton displacement, transactional history, phase QP &
+Accepted ordering; convergence and KKT contract added. \\
+Algorithm line 23 & XDMF displacement and phase output & Accepted and augmented
+with diagnostics, manifests, summaries, and plots. \\
+\bottomrule
+\end{tabularx}
+
+\section{Known limits and correct interpretation}
+
+\begin{enumerate}
+  \item \textbf{History-field approximation.} The history method is a common
+    engineering approximation to the exact crack-irreversibility variational
+    inequality. Within that approximation, the code additionally solves the
+    nodal phase bounds as a KKT-checked constrained problem.
+  \item \textbf{Instantaneous energy is not the history potential.} The reported
+    elastic-plus-fracture value is an instantaneous physical snapshot based on
+    current strain. After local unloading it is not the stationarity functional
+    of the history-driven phase subproblem and is not an exact energy-balance
+    residual.
+  \item \textbf{Diffuse starter crack.} The internal $\phi=0$ line is not a
+    traction-free geometrical slit; the mesh remains topologically connected.
+  \item \textbf{Residual scaling.} The KKT and coupled mechanical tolerances are
+    absolute assembled residuals calibrated for the documented kN--mm benchmark.
+    They must be reconsidered after major changes of units, mesh density, or
+    material scale.
+  \item \textbf{Serial backend.} The native-Windows implementation is serial and
+    uses SciPy sparse solves. It is not the MPI-parallel PETSc workflow commonly
+    used for large DOLFINx models.
+  \item \textbf{Crack-front metric.} The $\phi\le0.2$ connected threshold is a
+    reporting diagnostic, depends on mesh resolution, and is not an exact crack
+    length.
+  \item \textbf{Output-directory hygiene.} Optional files from an earlier run
+    are not deleted when the same directory is reused with XDMF or plotting
+    disabled. Fresh output directories should be used; the manifest and summary
+    are the authoritative status/configuration records.
+  \item \textbf{Validation scope.} A successful demonstration and unit tests
+    establish implementation behavior, not experimental validity. Quantitative
+    conclusions require mesh and length-scale studies plus material calibration.
+\end{enumerate}
+
+\section{Reproduction and document build}
+
+The solver environment and commands are documented in \path{README.md}. This
+LaTeX document is standalone and can be rebuilt with TeX Live from the repository
+root:
+
+\begin{lstlisting}[style=plaincode]
+latexmk -pdf -interaction=nonstopmode -halt-on-error \
+  -outdir=output/pdf docs/PHASEFIELD_ALGORITHM_ACCEPTANCE_AND_CORRECTIONS.tex
+\end{lstlisting}
+
+Alternatively, change into \path{docs/} and run:
+
+\begin{lstlisting}[style=plaincode]
+latexmk -pdf -interaction=nonstopmode -halt-on-error \
+  -outdir=../output/pdf PHASEFIELD_ALGORITHM_ACCEPTANCE_AND_CORRECTIONS.tex
+\end{lstlisting}
+
+The PDF is expected at
+\path{output/pdf/PHASEFIELD_ALGORITHM_ACCEPTANCE_AND_CORRECTIONS.pdf}.
+
+\begin{thebibliography}{9}
+
+\bibitem{karma-source}
+\emph{Phase-Field Fracture: Governing Equations and FEniCS Implementation
+Algorithm}, two-page technical source supplied as
+\path{D:/Github/Codes/Crackpropagation/Karma/KarmaCrack.pdf}.
+No author or publication metadata is asserted because none is shown in the
+reviewed document.
+
+\bibitem{critical-review}
+\emph{Critical review of the KarmaCrack phase-field algorithm}, project review
+record, \path{docs/ALGORITHM_REVIEW.md}.
+
+\bibitem{implementation}
+\emph{Corrected AT2 phase-field fracture benchmark implemented with FEniCSx},
+project implementation, \path{phasefield_crack.py}, model version 1.0.0.
+
+\bibitem{tests}
+Project verification suite, \path{tests/test_phasefield_crack.py}.
+
+\bibitem{demo}
+Recorded demonstration manifest, accepted-state response, and summary under
+\path{results/demo/}.
+
+\end{thebibliography}
+
+\end{document}

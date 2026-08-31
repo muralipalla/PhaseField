@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+#PBS -N phasefield-petsc
+#PBS -l select=1:ncpus=16:mpiprocs=16
+#PBS -l walltime=04:00:00
+#PBS -l mem=32gb
+#PBS -j oe
+
+set -euo pipefail
+
+SUBMIT_DIR="${PBS_O_WORKDIR:-$(pwd)}"
+if [[ -f "${PHASEFIELD_PROJECT_ROOT:-${SUBMIT_DIR}}/linux_cluster/run_linux.sh" ]]; then
+  PROJECT_ROOT="${PHASEFIELD_PROJECT_ROOT:-${SUBMIT_DIR}}"
+elif [[ -f "${SUBMIT_DIR}/run_linux.sh" ]]; then
+  SCRIPT_DIR="${SUBMIT_DIR}"
+  PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+else
+  echo "Submit from the project root or set PHASEFIELD_PROJECT_ROOT." >&2
+  exit 2
+fi
+SCRIPT_DIR="${SCRIPT_DIR:-${PROJECT_ROOT}/linux_cluster}"
+
+if [[ -n "${PBS_NP:-}" ]]; then
+  export NPROCS="${PBS_NP}"
+elif [[ -r "${PBS_NODEFILE:-}" ]]; then
+  export NPROCS="$(wc -l < "${PBS_NODEFILE}")"
+else
+  echo "PBS_NP/PBS_NODEFILE is unavailable; cannot determine MPI size." >&2
+  exit 2
+fi
+if [[ -r "${PBS_NODEFILE:-}" ]]; then
+  export EXPECTED_NODES="$(sort -u "${PBS_NODEFILE}" | wc -l)"
+else
+  export EXPECTED_NODES="${EXPECTED_NODES:-0}"
+fi
+
+export MPI_LAUNCHER="${MPI_LAUNCHER:-mpiexec}"
+export INPUT_FILE="${INPUT_FILE:-${SCRIPT_DIR}/inputs/notched_tension_cluster.in}"
+export OUTPUT_DIR="${OUTPUT_DIR:-${PROJECT_ROOT}/results/pbs_${PBS_JOBID}_${NPROCS}r}"
+
+# Add site-specific module commands only if required by your cluster.
+bash "${SCRIPT_DIR}/run_linux.sh"
